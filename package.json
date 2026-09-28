@@ -1,0 +1,1 @@
+{"name":"agrikaizen","version":"1.0.0","private":true,"description":"Vercel-ready AgrikAIzen web app","dependencies":{"openai":"^6.0.0"},"engines":{"node":"22.x"}}
