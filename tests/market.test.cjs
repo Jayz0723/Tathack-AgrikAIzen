@@ -63,8 +63,8 @@ test('market ownership, publishing, offers, validation and premium enforcement',
 test('scripts render bilingually; cancelled drafts stay private; published listings persist',async()=>{
  const vm=require('node:vm'),fs=require('node:fs');const storage=new Map();const element={value:'31',innerHTML:'',classList:{add(){},remove(){}},textContent:''};
  const ctx=vm.createContext({assert,crypto:require('node:crypto').webcrypto,console,Intl,Date,Number,JSON,setTimeout(){},clearTimeout(){},localStorage:{getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,v),removeItem:k=>storage.delete(k)},document:{querySelector:()=>element},window:{scrollTo(){}}});
- for(const file of ['app.js','marketplace.js'])vm.runInContext(fs.readFileSync(require('node:path').join(__dirname,'../js',file),'utf8'),ctx);
- vm.runInContext(`for(const lang of ['en','fil','ceb','ilo','hil']){state.lang=lang;startDemo('farmer');for(const page of ['home','prices','submit','buyers','profile','offers','estimate','coops','plan','oversupply'])go(page);startDemo('buyer');for(const page of ['home','harvests','offers','premium'])go(page);startDemo('logistics');for(const page of ['home','logistics','profile'])go(page);}`,ctx);
+ for(const file of ['app.js','marketplace.js','community.js'])vm.runInContext(fs.readFileSync(require('node:path').join(__dirname,'../js',file),'utf8'),ctx);
+ vm.runInContext(`for(const lang of ['en','fil','ceb','ilo','hil']){state.lang=lang;startDemo('farmer');for(const page of ['home','prices','submit','buyers','profile','offers','estimate','coops','plan','oversupply','community'])go(page);startDemo('buyer');for(const page of ['home','harvests','offers','premium','community'])go(page);startDemo('logistics');for(const page of ['home','logistics','profile','community'])go(page);}`,ctx);
  await vm.runInContext(`(async()=>{
   startDemo('farmer');
   const count=marketData().listings.length;
@@ -79,6 +79,7 @@ test('scripts render bilingually; cancelled drafts stay private; published listi
   const cropPlan=buildCropPlan('kamatis');assert.equal(cropPlan.crop,'kamatis');assert.ok(cropPlan.harvestStart>cropPlan.plantStart);assert.ok(pricesPage().includes('₱'));
   startDemo('buyer');
   for(const [tab,label] of [['source','Smart Sourcing'],['alerts','Harvest Alerts'],['suppliers','Supplier Management'],['orders','Recurring Orders'],['insights','Business Procurement Analytics']]){state.premiumTab=tab;assert.ok(premiumPage().includes(label),tab)}
+  startDemo('farmer');await communityWrite({action:'createPost',text:'Demo community post',category:'general'});const post=communityData().posts.find(p=>p.text==='Demo community post');assert.ok(post);await communityWrite({action:'toggleReaction',postId:post.id,reaction:'helpful'});assert.equal(communityData().posts.find(p=>p.id===post.id).reactions.helpful,1);await communityWrite({action:'addComment',postId:post.id,text:'Demo comment'});assert.equal(communityData().posts.find(p=>p.id===post.id).comments.length,1);await communityWrite({action:'deletePost',postId:post.id});assert.equal(communityData().posts.some(p=>p.id===post.id),false);
  })()`,ctx);
 
 });
