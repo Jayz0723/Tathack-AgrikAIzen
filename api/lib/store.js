@@ -9,6 +9,11 @@ async function command(args) {
     const [op, key, value] = args;
     if (op === 'GET') return memory.get(key) || null;
     if (op === 'SET') { memory.set(key, value); return 'OK'; }
+    if (op === 'EVAL') {
+      const [, , , recordKey, expected, replacement] = args;
+      if ((memory.get(recordKey) || '') !== expected) return 0;
+      memory.set(recordKey, replacement); return 1;
+    }
     throw new Error(`Unsupported local store command: ${op}`);
   }
   const response = await fetch(process.env.KV_REST_API_URL, {
@@ -16,6 +21,7 @@ async function command(args) {
   });
   if (!response.ok) throw new Error('The user store is temporarily unavailable.');
   const data = await response.json();
+  if (data.error) throw new Error('Storage operation failed.');
   return data.result;
 }
 
@@ -49,4 +55,4 @@ function verify(token) {
 function send(res, code, value) { res.status(code).json(value); }
 function method(req, res) { if (req.method !== 'POST') { send(res,405,{error:'Method not allowed'}); return false; } return true; }
 
-module.exports = { getUser, putUser, hashPassword, checkPassword, publicUser, sign, verify, send, method };
+module.exports = { command, getUser, putUser, hashPassword, checkPassword, publicUser, sign, verify, send, method };

@@ -1,6 +1,6 @@
 const crypto = require('crypto');
 const { getUser, putUser, hashPassword, publicUser, sign, send, method } = require('../lib/store');
-const validRoles = new Set(['farmer','buyer','coop','admin']);
+const validRoles = new Set(['farmer','buyer','coop','logistics','admin']);
 
 module.exports = async (req, res) => {
   if (!method(req,res)) return;
