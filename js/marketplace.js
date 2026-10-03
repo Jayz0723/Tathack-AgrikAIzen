@@ -1,19 +1,20 @@
 /* Active marketplace screens. Demo records are separate from authenticated data. */
-const marketEmpty = () => ({listings:[],requests:[],offers:[],alerts:[],suppliers:[],recurring:[],premium:false});
+const marketEmpty = () => ({listings:[],requests:[],offers:[],drafts:[],alerts:[],suppliers:[],recurring:[],premium:false});
 const uid = () => crypto.randomUUID();
 const cropName = id => { const c=crops.find(c=>c.id===id); return c ? (isEn()?c.en:c.fil) : id; };
 const money = n => new Intl.NumberFormat(isEn()?'en-PH':'fil-PH',{style:'currency',currency:'PHP'}).format(n);
 const listingTypeName = id => ({'pre-harvest':t('Bago anihin','Pre-harvest'),fresh:t('Bagong ani','Fresh harvest'),emergency:t('Agarang bentahan','Emergency harvest')}[id] || id);
 function demoMarket() {
   const saved=localStorage.getItem('agri_market_demo_v1');
-  if(saved) { try { const old=JSON.parse(saved),sample={"sample-1":{distance:8,farmingMethod:'organic'},"sample-2":{distance:4.1,farmingMethod:'conventional'},"sample-3":{distance:18,farmingMethod:'natural'}},offers=old.offers||[];if(!offers.some(o=>o.id==='history-1'))offers.unshift({id:'history-1',listingId:'sample-1',farmerId:'sample-farmer-1',buyerId:'demo-buyer',buyer:'Maria Reyes',location:'Bustos, Bulacan',crop:'kamatis',variety:'Kamatis Diamante',quantity:100,price:52,status:'accepted',createdAt:'2026-09-15T08:00:00.000Z'});offers.forEach(o=>{o.transactionStatus=o.transactionStatus||(o.status==='accepted'?'confirmed':o.status==='countered'?'counter_review':o.status==='rejected'?'cancelled':'offer_review')});return {...marketEmpty(),...old,offers,premium:true,alerts:old.alerts||[],suppliers:old.suppliers||[],recurring:old.recurring||[],listings:(old.listings||[]).map(l=>({...sample[l.id],...l,status:l.status||'available',farmingMethod:l.farmingMethod||sample[l.id]?.farmingMethod||'conventional'}))}; } catch {} }
-  return {premium:true,alerts:[],suppliers:[],recurring:[],offers:[
+  if(saved) { try { const old=JSON.parse(saved),sample={"sample-1":{distance:8,farmingMethod:'organic'},"sample-2":{distance:4.1,farmingMethod:'conventional'},"sample-3":{distance:18,farmingMethod:'natural'}},offers=old.offers||[];if(!offers.some(o=>o.id==='history-1'))offers.unshift({id:'history-1',listingId:'sample-1',farmerId:'sample-farmer-1',buyerId:'demo-buyer',buyer:'Maria Reyes',location:'Bustos, Bulacan',crop:'kamatis',variety:'Kamatis Diamante',quantity:100,price:52,status:'accepted',createdAt:'2026-09-15T08:00:00.000Z'});offers.forEach(o=>{o.transactionStatus=o.transactionStatus||(o.status==='accepted'?'confirmed':o.status==='countered'?'counter_review':o.status==='rejected'?'cancelled':'offer_review')});old.requests=(old.requests||[]).map((r,i)=>({...r,...(r.id==='need-1'?{buyerId:'demo-buyer',buyer:'Maria Reyes'}:{}),requiredDate:r.requiredDate||['2026-10-20','2026-10-25','2026-10-18'][i]||'2026-10-30',skippedBy:r.skippedBy||[],messages:r.messages||[]}));if(!old.listings?.some(l=>l.id==='demo-flow-listing'))old.listings=[...(old.listings||[]),{id:'demo-flow-listing',farmerId:'demo-farmer',farmer:'Mang Tomas dela Cruz',crop:'palay',variety:'Palay RC 222',quantity:1500,price:26,location:'Binalonan, Pangasinan',distance:2.3,rating:4.8,listingType:'pre-harvest',quality:'premium',farmingMethod:'conventional',status:'available',harvestDate:'2026-10-10'}];return {...marketEmpty(),...old,offers,drafts:old.drafts||[],premium:true,alerts:old.alerts||[],suppliers:old.suppliers||[],recurring:old.recurring||[],listings:(old.listings||[]).map(l=>({...sample[l.id],...l,status:l.status||'available',farmingMethod:l.farmingMethod||sample[l.id]?.farmingMethod||'conventional'}))}; } catch {} }
+  return {premium:true,drafts:[],alerts:[],suppliers:[],recurring:[],offers:[
     {id:'history-1',listingId:'sample-1',farmerId:'sample-farmer-1',buyerId:'demo-buyer',buyer:'Maria Reyes',location:'Bustos, Bulacan',crop:'kamatis',variety:'Kamatis Diamante',quantity:100,price:52,status:'accepted',transactionStatus:'confirmed',createdAt:'2026-09-15T08:00:00.000Z'}
   ],requests:[
-    {id:'need-1',buyerId:'sample-buyer-1',buyer:'Bulacan Organic Wholesalers',crop:'palay',quantity:1200,price:27,location:'Bustos, Bulacan',distance:2.4},
-    {id:'need-2',buyerId:'sample-buyer-2',buyer:'Bustos Farmers Cooperative',crop:'mais',quantity:800,price:19,location:'Bustos, Bulacan',distance:1.2},
-    {id:'need-3',buyerId:'sample-buyer-3',buyer:'Juan Dela Cruz Agri-Trading',crop:'kamatis',quantity:500,price:53,location:'Malolos, Bulacan',distance:4.1}
+    {id:'need-1',buyerId:'demo-buyer',buyer:'Maria Reyes',crop:'palay',quantity:1200,price:27,location:'Bustos, Bulacan',distance:2.4,rating:4.8,requiredDate:'2026-10-20',skippedBy:[],messages:[]},
+    {id:'need-2',buyerId:'sample-buyer-2',buyer:'Bustos Farmers Cooperative',crop:'mais',quantity:800,price:19,location:'Bustos, Bulacan',distance:1.2,rating:4.6,requiredDate:'2026-10-25',skippedBy:[],messages:[]},
+    {id:'need-3',buyerId:'sample-buyer-3',buyer:'Juan Dela Cruz Agri-Trading',crop:'kamatis',quantity:500,price:53,location:'Malolos, Bulacan',distance:4.1,rating:null,requiredDate:'2026-10-18',skippedBy:[],messages:[]}
   ],listings:[
+    {id:'demo-flow-listing',farmerId:'demo-farmer',farmer:'Mang Tomas dela Cruz',crop:'palay',variety:'Palay RC 222',quantity:1500,price:26,location:'Binalonan, Pangasinan',distance:2.3,rating:4.8,listingType:'pre-harvest',quality:'premium',farmingMethod:'conventional',status:'available',harvestDate:'2026-10-10'},
     {id:'sample-1',farmerId:'sample-farmer-1',farmer:'Aling Rosa Santos',crop:'kamatis',variety:'Kamatis Diamante',quantity:500,price:55,location:'La Trinidad, Benguet',distance:8,rating:4.9,listingType:'fresh',quality:'premium',farmingMethod:'organic',status:'available',harvestDate:'2026-10-02'},
     {id:'sample-2',farmerId:'sample-farmer-2',farmer:'Jose Ramirez',crop:'mais',variety:'Mais Hybrid',quantity:850,price:20,location:'Bustos, Bulacan',distance:4.1,rating:4.7,listingType:'pre-harvest',quality:'standard',farmingMethod:'conventional',status:'available',harvestDate:'2026-10-12'},
     {id:'sample-3',farmerId:'sample-farmer-3',farmer:'Ana Reyes',crop:'sibuyas',variety:'Red onion',quantity:200,price:60,location:'Bongabon, Nueva Ecija',distance:18,rating:4.8,listingType:'emergency',quality:'standard',farmingMethod:'natural',status:'available',harvestDate:'2026-10-01'}
@@ -37,12 +38,24 @@ async function refreshMarket() {
 }
 async function marketWrite(body) {
   if(!state.user.demo) return api('/api/market',body);
-  const db=demoMarket(), u=state.user, id=uid(), createdAt=new Date().toISOString(); let result;
-  if(body.action==='publish') {
+  const db=demoMarket(), u=state.user, id=uid(), createdAt=new Date().toISOString(); db.drafts=db.drafts||[]; let result;
+  if(body.action==='saveDraft') {
+    result=db.drafts.find(d=>d.id===body.draftId&&d.farmerId===u.id);const values={...body,id:body.draftId,farmerId:u.id,updatedAt:createdAt};if(result)Object.assign(result,values);else{result={...values,createdAt};db.drafts.push(result)}
+  } else if(body.action==='deleteDraft') {
+    const i=db.drafts.findIndex(d=>d.id===body.id&&d.farmerId===u.id);if(i<0)throw new Error(t('Hindi nakita ang draft.','Draft not found.'));result=db.drafts.splice(i,1)[0];
+  } else if(body.action==='publish') {
     result=db.listings.find(l=>l.draftId===body.draftId && l.farmerId===u.id);
-    if(!result) { result={...body,id,availableQuantity:body.quantity,farmerId:u.id,farmer:u.name,createdAt}; db.listings.push(result); }
+    if(!result) { result={...body,id,availableQuantity:body.quantity,farmerId:u.id,farmer:u.name,createdAt}; db.listings.push(result); }db.drafts=db.drafts.filter(d=>d.id!==body.draftId);
   } else if(body.action==='request') {
-    result={...body,id,buyerId:u.id,buyer:u.name,createdAt}; db.requests.push(result);
+    result={...body,id,buyerId:u.id,buyer:u.name,rating:null,skippedBy:[],messages:[],createdAt}; db.requests.push(result);
+  } else if(body.action==='skipRequest') {
+    result=db.requests.find(r=>r.id===body.id);result.skippedBy=result.skippedBy||[];if(!result.skippedBy.includes(u.id))result.skippedBy.push(u.id);
+  } else if(body.action==='messageRequest') {
+    result=db.requests.find(r=>r.id===body.id);result.messages=result.messages||[];result.messages.push({id,senderId:u.id,sender:u.name,message:body.message,createdAt});
+  } else if(body.action==='respondRequest') {
+    const request=db.requests.find(r=>r.id===body.requestId),listing=db.listings.find(l=>l.id===body.listingId&&l.farmerId===u.id);if(!request||!listing)throw new Error(t('Hindi nakita ang tugmang request o listing.','Matching request or listing not found.'));if(db.offers.some(o=>o.requestId===request.id&&o.farmerId===u.id&&o.status!=='rejected'))throw new Error(t('Nakatugon ka na sa request na ito.','You already responded to this request.'));result={id,requestId:request.id,listingId:listing.id,farmerId:u.id,farmer:u.name,buyerId:request.buyerId,buyer:request.buyer,location:listing.location,crop:listing.crop,variety:listing.variety,quantity:body.quantity,price:body.price,initiatedBy:'farmer',status:'farmer_proposal',transactionStatus:'buyer_review',createdAt};db.offers.push(result);
+  } else if(body.action==='respondRequestOffer') {
+    result=db.offers.find(o=>o.id===body.id&&o.buyerId===u.id&&o.status==='farmer_proposal');if(!result)throw new Error(t('Hindi nakita ang alok ng farmer.','Farmer proposal not found.'));if(body.status==='accepted')confirmDemoOffer(db,result);else if(body.status==='rejected'){result.status='rejected';result.transactionStatus='cancelled'}else{const listing=db.listings.find(l=>l.id===result.listingId);result.price=body.price;result.status='pending';result.transactionStatus='offer_review';result.counterFrom='buyer';Object.assign(result,offerAssessment(listing,body.price))}
   } else if(body.action==='offer') {
     const l=db.listings.find(l=>l.id===body.listingId);
     if(!l || l.status!=='available' || body.quantity>demoAvailable(db,l)) throw new Error(t('Hindi sapat ang ani.','Insufficient listing quantity.'));

@@ -1,5 +1,5 @@
 const $ = (s) => document.querySelector(s);
-const deepLinkPage = typeof location!=='undefined' && ['offers','logistics'].includes(new URLSearchParams(location.search).get('page')) ? new URLSearchParams(location.search).get('page') : null;
+const deepLinkPage = typeof location!=='undefined' && ['offers','logistics','buyers'].includes(new URLSearchParams(location.search).get('page')) ? new URLSearchParams(location.search).get('page') : null;
 const state = { lang: localStorage.getItem('agri_lang') || 'fil', page: deepLinkPage || 'home', pendingPage:deepLinkPage, focusOffer:typeof location!=='undefined'?new URLSearchParams(location.search).get('offer'):null, mode: 'login', user: JSON.parse(localStorage.getItem('agri_user') || 'null'), token: localStorage.getItem('agri_token') || '' };
 const isEn = () => state.lang === 'en';
 const dialectText={

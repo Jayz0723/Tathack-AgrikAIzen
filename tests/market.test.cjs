@@ -12,9 +12,10 @@ test('market ownership, publishing, offers, validation and premium enforcement',
  for(const u of [farmer,buyer,other,logistics,coop])await putUser(u);
  assert.equal((await call(null,{action:'read'})).status,401);
  const draft={action:'publish',draftId:'draft1',crop:'palay',quantity:500,location:'Bustos',variety:'RC222',price:28,quality:'premium',farmingMethod:'organic',listingType:'pre-harvest',harvestDate:'2026-10-12'};
+ assert.equal((await call(farmer,{...draft,action:'saveDraft'})).status,200);assert.equal((await call(farmer,{action:'read'})).drafts.length,1);
  assert.equal((await call(buyer,draft)).status,403);
  assert.equal((await call(farmer,{...draft,quantity:-1})).status,400);
- const pub=await call(farmer,draft);assert.equal(pub.status,200);
+ const pub=await call(farmer,draft);assert.equal(pub.status,200);assert.equal((await call(farmer,{action:'read'})).drafts.length,0);
  assert.equal((await call(farmer,draft)).result.id,pub.result.id);
  assert.equal((await call(farmer,{action:'read'})).listings.length,1);
  const listingId=pub.result.id;
@@ -28,7 +29,7 @@ test('market ownership, publishing, offers, validation and premium enforcement',
   assert.equal((await call(farmer,{action:'respond',id:offer.result.id,status,price:25})).status,409);
  }
  assert.equal((await call(buyer,{action:'read'})).offers.length,3);
- assert.equal((await call(buyer,{action:'request',crop:'palay',quantity:50,price:30,location:'Bustos'})).status,200);
+ const buyerRequest=await call(buyer,{action:'request',crop:'palay',quantity:50,price:30,location:'Bustos',requiredDate:'2026-10-20'});assert.equal(buyerRequest.status,200);
  assert.equal((await call(farmer,{action:'read'})).requests.length,1);
  assert.equal((await call(buyer,{action:'match',crop:'palay',quantity:50,price:30,premium:true})).status,403);
  buyer.plan='premium';await putUser(buyer);
@@ -56,14 +57,19 @@ test('market ownership, publishing, offers, validation and premium enforcement',
  await call(farmer,{action:'respond',id:counterDeal.result.id,status:'countered',price:26});const counterAccepted=await call(buyer,{action:'respondCounter',id:counterDeal.result.id,status:'accepted'});assert.equal(counterAccepted.result.price,26);assert.equal(counterAccepted.result.transactionStatus,'confirmed');
  const tooLarge=await call(buyer,{action:'offer',listingId,price:28,quantity:251});assert.equal(tooLarge.status,400);
  const remaining=(await call(buyer,{action:'read'})).listings.find(l=>l.id===listingId);assert.equal(remaining.availableQuantity,250);
+ const farmerRequests=await call(farmer,{action:'read'});assert.equal(farmerRequests.requests.find(r=>r.id===buyerRequest.result.id).matched,true);
+ assert.equal((await call(other,{action:'respondRequest',requestId:buyerRequest.result.id,listingId,quantity:50,price:29})).status,404);
+ const proposal=await call(farmer,{action:'respondRequest',requestId:buyerRequest.result.id,listingId,quantity:50,price:29});assert.equal(proposal.result.transactionStatus,'buyer_review');
+ assert.equal((await call(buyer,{action:'respondRequestOffer',id:proposal.result.id,status:'countered',price:27})).result.status,'pending');
+ assert.equal((await call(farmer,{action:'respond',id:proposal.result.id,status:'accepted'})).result.transactionStatus,'confirmed');
  const buyerRead=await call(buyer,{action:'read'});assert.equal(buyerRead.alerts.length,1);assert.equal(buyerRead.recurring.length,1);assert.equal(buyerRead.suppliers.length,0);
- const concurrent=await Promise.all([1,2].map(()=>call(buyer,{action:'request',crop:'mais',quantity:50,price:20,location:'Bustos'})));
+ const concurrent=await Promise.all([1,2].map(()=>call(buyer,{action:'request',crop:'mais',quantity:50,price:20,location:'Bustos',requiredDate:'2026-10-30'})));
  assert.deepEqual(concurrent.map(r=>r.status).sort(),[200,409]);
 });
 test('scripts render bilingually; cancelled drafts stay private; published listings persist',async()=>{
  const vm=require('node:vm'),fs=require('node:fs');const storage=new Map();const element={value:'31',innerHTML:'',classList:{add(){},remove(){}},textContent:''};
  const ctx=vm.createContext({assert,crypto:require('node:crypto').webcrypto,console,Intl,Date,Number,JSON,setTimeout(){},clearTimeout(){},localStorage:{getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,v),removeItem:k=>storage.delete(k)},document:{querySelector:()=>element},window:{scrollTo(){}}});
- for(const file of ['app.js','marketplace.js','community.js'])vm.runInContext(fs.readFileSync(require('node:path').join(__dirname,'../js',file),'utf8'),ctx);
+ for(const file of ['app.js','marketplace.js','community.js','flow.js'])vm.runInContext(fs.readFileSync(require('node:path').join(__dirname,'../js',file),'utf8'),ctx);
  vm.runInContext(`for(const lang of ['en','fil','ceb','ilo','hil']){state.lang=lang;startDemo('farmer');for(const page of ['home','prices','submit','buyers','profile','offers','estimate','coops','plan','oversupply','community'])go(page);startDemo('buyer');for(const page of ['home','harvests','offers','premium','community'])go(page);startDemo('logistics');for(const page of ['home','logistics','profile','community'])go(page);}`,ctx);
  await vm.runInContext(`(async()=>{
   startDemo('farmer');
