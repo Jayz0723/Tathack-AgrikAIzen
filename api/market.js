@@ -8,8 +8,12 @@ const number = (x) => typeof x === 'number' && Number.isFinite(x) && x > 0 && x 
 const text = (x, max=100) => typeof x === 'string' && x.trim().length > 0 && x.trim().length <= max;
 const cropIds = ['palay','mais','kamatis','sibuyas','saging','talong','sili','pechay','repolyo','patatas','kamote','mangga','pinya','papaya','niyog'];
 const date = x => /^\d{4}-\d{2}-\d{2}$/.test(x || '') && Number.isFinite(Date.parse(x));
-const premium = user => user.role === 'buyer' && user.plan === 'premium';
-const requirePremium = user => { if (!premium(user)) fail('This tool requires Buyer Premium.',403); };
+const subscriptionTier = user => user.role!=='buyer' ? null : user.plan==='pro' ? 'pro' : ['enterprise','premium'].includes(user.plan) ? 'enterprise' : null;
+const premium = user => Boolean(subscriptionTier(user));
+const requireTier = (user,required='pro') => {
+  const tier=subscriptionTier(user),allowed=required==='pro'?['pro','enterprise'].includes(tier):tier==='enterprise';
+  if(!allowed)fail(`This tool requires the Buyer ${required==='pro'?'Pro':'Enterprise'} plan.`,403);
+};
 function validateCrop(b) {
   if (!cropIds.includes(b.crop) || !number(b.quantity) || !text(b.location)) fail('Invalid crop, quantity or location.');
 }
@@ -158,7 +162,7 @@ function mutate(db, user, b) {
     offer.updatedAt=createdAt;return offer;
   }
   if (b.action === 'bulkOffer') {
-    requirePremium(user);
+    requireTier(user,'enterprise');
     if (!Array.isArray(b.listingIds) || !b.listingIds.length || b.listingIds.length > 20 || !number(b.quantity) || !number(b.price) || !date(b.requiredDate)) fail('Complete the bulk request details.');
     const selected = [...new Set(b.listingIds)].map(id => db.listings.find(l => l.id === id && l.status === 'available')).filter(Boolean);
     if (!selected.length) fail('No selected listings are available.',404);
@@ -173,30 +177,30 @@ function mutate(db, user, b) {
     db.offers.push(...created); return created;
   }
   if (b.action === 'createAlert') {
-    requirePremium(user);
+    requireTier(user,'enterprise');
     if (!cropIds.includes(b.crop) || !number(b.quantity) || !number(b.maximumPrice) || !text(b.location) || !date(b.fromDate) || !date(b.toDate) || b.fromDate>b.toDate) fail('Complete the alert details.');
     const alert={id,buyerId:user.id,crop:b.crop,quantity:b.quantity,maximumPrice:b.maximumPrice,location:b.location.trim(),fromDate:b.fromDate,toDate:b.toDate,active:true,createdAt};
     db.alerts.push(alert); return alert;
   }
   if (b.action === 'deleteAlert') {
-    requirePremium(user);
+    requireTier(user,'enterprise');
     const index=db.alerts.findIndex(x=>x.id===b.id && x.buyerId===user.id); if(index<0)fail('Alert not found.',404);
     return db.alerts.splice(index,1)[0];
   }
   if (b.action === 'toggleSupplier') {
-    requirePremium(user);
+    requireTier(user,'pro');
     const listing=db.listings.find(l=>l.farmerId===b.farmerId); if(!listing)fail('Supplier not found.',404);
     const index=db.suppliers.findIndex(x=>x.buyerId===user.id && x.farmerId===b.farmerId);
     if(index>=0){db.suppliers.splice(index,1);return {farmerId:b.farmerId,saved:false};}
     const supplier={id,buyerId:user.id,farmerId:b.farmerId,farmer:listing.farmer,location:listing.location,createdAt};db.suppliers.push(supplier);return {...supplier,saved:true};
   }
   if (b.action === 'createRecurring') {
-    requirePremium(user);
+    requireTier(user,'enterprise');
     if (!cropIds.includes(b.crop) || !number(b.quantity) || !number(b.maximumPrice) || !['weekly','biweekly','monthly'].includes(b.cadence) || !date(b.startDate)) fail('Complete the recurring order details.');
     const order={id,buyerId:user.id,crop:b.crop,quantity:b.quantity,maximumPrice:b.maximumPrice,cadence:b.cadence,startDate:b.startDate,active:true,createdAt};db.recurring.push(order);return order;
   }
   if (b.action === 'toggleRecurring') {
-    requirePremium(user);
+    requireTier(user,'enterprise');
     const order=db.recurring.find(x=>x.id===b.id && x.buyerId===user.id);if(!order)fail('Recurring order not found.',404);order.active=!order.active;return order;
   }
   fail('Unknown action.');
@@ -211,9 +215,9 @@ module.exports = async (req,res) => {
     const raw = await command(['GET',KEY]); const db = Object.assign(blank(),raw ? JSON.parse(raw) : {});
     db.offers.forEach(o=>{o.transactionStatus=o.transactionStatus||(o.status==='accepted'?'confirmed':o.status==='countered'?'counter_review':o.status==='rejected'?'cancelled':'offer_review')});
     db.listings.forEach(l=>{l.availableQuantity=availableQuantity(db,l);if(l.availableQuantity===0)l.status='sold'});
-    if (b.action === 'read') return send(res,200,{listings:db.listings,requests:db.requests.map(r=>requestForUser(db,r,user)),drafts:db.drafts.filter(x=>x.farmerId===user.id),offers:visibleOffers(db,user),alerts:db.alerts.filter(x=>x.buyerId===user.id),suppliers:db.suppliers.filter(x=>x.buyerId===user.id),recurring:db.recurring.filter(x=>x.buyerId===user.id),premium:premium(user)});
+    if (b.action === 'read') return send(res,200,{listings:db.listings,requests:db.requests.map(r=>requestForUser(db,r,user)),drafts:db.drafts.filter(x=>x.farmerId===user.id),offers:visibleOffers(db,user),alerts:db.alerts.filter(x=>x.buyerId===user.id),suppliers:db.suppliers.filter(x=>x.buyerId===user.id),recurring:db.recurring.filter(x=>x.buyerId===user.id),premium:premium(user),subscriptionTier:subscriptionTier(user)});
     if (b.action === 'match') {
-      if (!premium(user)) return send(res,403,{error:'Auto-matching requires Buyer Premium.'});
+      if (!premium(user)) return send(res,403,{error:'Auto-matching requires the Buyer Pro or Enterprise plan.'});
       validateCrop({...b,location:user.location}); if (!number(b.price)) fail('Enter a valid maximum price.');
       const matches=db.listings.filter(l => l.status==='available' && l.crop===b.crop && l.availableQuantity>=b.quantity && l.price<=b.price && (!number(b.minimumPrice) || l.price>=b.minimumPrice) && (!b.requiredDate || l.harvestDate<=b.requiredDate) && (!b.quality || b.quality==='any' || l.quality===b.quality) && (!b.farmingMethod || b.farmingMethod==='any' || l.farmingMethod===b.farmingMethod) && (!number(b.distance) || !number(l.distance) || l.distance<=b.distance)).map(l=>{const reasons=['crop','quantity','price'],sameArea=String(l.location).toLowerCase().includes(String(user.location).split(',').pop().trim().toLowerCase()),quality=!b.quality||b.quality==='any'||l.quality===b.quality,method=!b.farmingMethod||b.farmingMethod==='any'||l.farmingMethod===b.farmingMethod,dateFit=!b.requiredDate||l.harvestDate<=b.requiredDate;if(sameArea)reasons.push('location');if(quality)reasons.push('quality');if(method)reasons.push('farming-method');if(dateFit)reasons.push('delivery-date');const matchScore=Math.min(100,55+(sameArea?15:0)+(quality?10:0)+(method?10:0)+(dateFit?10:0));return {...l,matchScore,matchReasons:reasons}}).sort((a,b)=>b.matchScore-a.matchScore||a.price-b.price);
       return send(res,200,{matches,distanceNotice:matches.some(l=>!number(l.distance))});

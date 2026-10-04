@@ -32,15 +32,18 @@ test('market ownership, publishing, offers, validation and premium enforcement',
  const buyerRequest=await call(buyer,{action:'request',crop:'palay',quantity:50,price:30,location:'Bustos',requiredDate:'2026-10-20'});assert.equal(buyerRequest.status,200);
  assert.equal((await call(farmer,{action:'read'})).requests.length,1);
  assert.equal((await call(buyer,{action:'match',crop:'palay',quantity:50,price:30,premium:true})).status,403);
- buyer.plan='premium';await putUser(buyer);
+ buyer.plan='pro';await putUser(buyer);
  assert.equal((await call(buyer,{action:'match',crop:'palay',quantity:50,minimumPrice:25,price:30,requiredDate:'2026-10-15',quality:'premium',farmingMethod:'organic',distance:25})).matches.length,1);
  assert.equal((await call(buyer,{action:'match',crop:'palay',quantity:50,minimumPrice:29,price:30})).matches.length,0);
  assert.equal((await call(buyer,{action:'match',crop:'palay',quantity:50,price:30,requiredDate:'2026-10-01'})).matches.length,0);
  assert.equal((await call(buyer,{action:'match',crop:'palay',quantity:50,price:10})).matches.length,0);
- const alert=await call(buyer,{action:'createAlert',crop:'palay',quantity:50,maximumPrice:30,location:'Bustos',fromDate:'2026-10-01',toDate:'2026-10-31'});assert.equal(alert.status,200);
- assert.equal((await call(other,{action:'deleteAlert',id:alert.result.id})).status,403);
+ assert.equal((await call(buyer,{action:'createAlert',crop:'palay',quantity:50,maximumPrice:30,location:'Bustos',fromDate:'2026-10-01',toDate:'2026-10-31'})).status,403);
+ assert.equal((await call(buyer,{action:'bulkOffer',listingIds:[listingId],quantity:50,price:27,requiredDate:'2026-10-15'})).status,403);
  assert.equal((await call(buyer,{action:'toggleSupplier',farmerId:farmer.id})).result.saved,true);
  assert.equal((await call(buyer,{action:'toggleSupplier',farmerId:farmer.id})).result.saved,false);
+ buyer.plan='enterprise';await putUser(buyer);
+ const alert=await call(buyer,{action:'createAlert',crop:'palay',quantity:50,maximumPrice:30,location:'Bustos',fromDate:'2026-10-01',toDate:'2026-10-31'});assert.equal(alert.status,200);
+ assert.equal((await call(other,{action:'deleteAlert',id:alert.result.id})).status,403);
  const recurring=await call(buyer,{action:'createRecurring',crop:'palay',quantity:50,maximumPrice:30,cadence:'weekly',startDate:'2026-10-03'});assert.equal(recurring.status,200);
  assert.equal((await call(buyer,{action:'toggleRecurring',id:recurring.result.id})).result.active,false);
  const bulk=await call(buyer,{action:'bulkOffer',listingIds:[listingId],quantity:200,price:27,requiredDate:'2026-10-15'});assert.equal(bulk.result.length,1);assert.equal(bulk.result[0].quantity,200);
@@ -90,7 +93,9 @@ test('scripts render bilingually; cancelled drafts stay private; published listi
   const cropPlan=buildCropPlan('kamatis');assert.equal(cropPlan.crop,'kamatis');assert.ok(cropPlan.harvestStart>cropPlan.plantStart);const addedCropPlan=buildCropPlan('pechay');assert.ok(addedCropPlan.harvestStart>addedCropPlan.plantStart);assert.ok(pricesPage().includes('Talong'));assert.ok(pricesPage().includes('🥭'));assert.ok(pricesPage().includes('₱'));
   const guide=oversupplyPage();assert.equal((guide.match(/<details/g)||[]).length,4);assert.ok(guide.includes('process-chevron'));assert.ok(guide.includes('Mga hakbang'));assert.ok(guide.includes('Kagamitan'));assert.ok(!guide.includes('class="card process-row"'));
   startDemo('buyer');
-  for(const [tab,label] of [['source','Smart Sourcing'],['alerts','Harvest Alerts'],['suppliers','Supplier Management'],['orders','Recurring Orders'],['insights','Business Procurement Analytics']]){state.premiumTab=tab;assert.ok(premiumPage().includes(label),tab)}
+  for(const [tab,label] of [['source','Smart Sourcing'],['market','Market Price Intelligence'],['alerts','Harvest Alerts'],['suppliers','Supplier Management'],['orders','Recurring Orders'],['insights','Business Procurement Analytics']]){state.showPremiumPlans=false;state.premiumTab=tab;assert.ok(premiumPage().includes(label),tab)}
+  state.showPremiumPlans=true;const plans=premiumPage();assert.ok(plans.includes('₱299'));assert.ok(plans.includes('₱999'));assert.ok(plans.includes('Advanced Supplier Search'));assert.ok(plans.includes('Exportable Records'));state.showPremiumPlans=false;
+  const proData=marketData();state.user={...state.user,id:'ui-pro',demo:false};state.marketOwner='ui-pro';state.market={...proData,premium:true,subscriptionTier:'pro'};state.premiumTab='source';const proPage=premiumPage();assert.ok(proPage.includes('Smart Sourcing'));assert.ok(proPage.includes("premiumTab='market'"));assert.ok(!proPage.includes('Harvest Alerts'));state.matchCriteria={quantity:50};assert.ok(!comparisonPanel([proData.listings[0]]).includes('onsubmit="bulkOffer(event)"'));
   startDemo('farmer');await communityWrite({action:'createPost',text:'Demo community post',category:'general'});const post=communityData().posts.find(p=>p.text==='Demo community post');assert.ok(post);await communityWrite({action:'toggleReaction',postId:post.id,reaction:'helpful'});assert.equal(communityData().posts.find(p=>p.id===post.id).reactions.helpful,1);await communityWrite({action:'addComment',postId:post.id,text:'Demo comment'});assert.equal(communityData().posts.find(p=>p.id===post.id).comments.length,1);await communityWrite({action:'deletePost',postId:post.id});assert.equal(communityData().posts.some(p=>p.id===post.id),false);
  })()`,ctx);
 
