@@ -7,9 +7,9 @@ const CROPS = ['palay','mais','kamatis','sibuyas','saging','talong','sili','pech
 const BASE = {palay:25,mais:18,kamatis:50,sibuyas:65,saging:24,talong:48,sili:95,pechay:42,repolyo:38,patatas:70,kamote:36,mangga:65,pinya:35,papaya:32,niyog:28};
 const PERISHABILITY = {palay:'low',mais:'medium',kamatis:'high',sibuyas:'medium',saging:'high',talong:'high',sili:'medium',pechay:'high',repolyo:'medium',patatas:'low',kamote:'low',mangga:'high',pinya:'medium',papaya:'high',niyog:'low'};
 const COOPERATIVES = [
-  {id:'coop-banaue',name:'Banaue Organic Rice Cooperative',location:'Banaue, Ifugao',crops:['palay'],services:['buyer-linkage','storage','transport'],rating:4.9,verified:true},
-  {id:'coop-benguet',name:'Benguet Highland Producers',location:'La Trinidad, Benguet',crops:['kamatis','sibuyas'],services:['cold-storage','processing','transport'],rating:4.8,verified:true},
-  {id:'coop-samahan',name:'Samahang Nayon Cooperative',location:'Binalonan, Pangasinan',crops:['palay','mais','saging'],services:['buyer-linkage','drying','training'],rating:4.6,verified:true}
+  {id:'coop-banaue',name:'Banaue Organic Rice Cooperative',location:'Banaue, Ifugao',crops:['palay'],services:['buyer-linkage','storage','transport'],verified:true},
+  {id:'coop-benguet',name:'Benguet Highland Producers',location:'La Trinidad, Benguet',crops:['kamatis','sibuyas'],services:['cold-storage','processing','transport'],verified:true},
+  {id:'coop-samahan',name:'Samahang Nayon Cooperative',location:'Binalonan, Pangasinan',crops:['palay','mais','saging'],services:['buyer-linkage','drying','training'],verified:true}
 ];
 const blank = () => ({listings:[],offers:[],requests:[],drafts:[],alerts:[],suppliers:[],recurring:[],priceReports:[],assistedFarmers:[]});
 const positive = value => typeof value === 'number' && Number.isFinite(value) && value > 0 && value <= 1e9;

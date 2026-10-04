@@ -34,7 +34,7 @@ function renderBuyers(){
       <div style="flex:1;">
         <span class="muted" style="font-size:11px;">${b.verified ? 'VERIFIED PARTNER' : b.type.toUpperCase()}</span><br>
         <b>${b.name}</b><br>
-        <span class="muted" style="font-size:12px;">⭐ ${b.rating} • ${b.dist} km</span><br>
+        <span class="muted" style="font-size:12px;">${b.dist} km ang layo</span><br>
         <span style="color:var(--green-700);font-weight:700;">₱${b.price.toFixed(2)}/kg</span>
       </div>
       <button class="btn small" onclick="toast('Contact: ${b.contact}')">I-kontak</button>

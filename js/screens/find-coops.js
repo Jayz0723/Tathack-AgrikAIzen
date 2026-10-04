@@ -6,7 +6,6 @@ document.addEventListener('DOMContentLoaded', () => {
     <input placeholder="I-search ang bayan o produkto..." id="coopSearch" oninput="renderCoops()">
     <div class="row" style="margin:10px 0;">
       <button class="choicebtn active" data-sort="near" onclick="pickCoopSort(this)">Pinakamalapit</button>
-      <button class="choicebtn" data-sort="rating" onclick="pickCoopSort(this)">Mataas na Rating</button>
       <button class="choicebtn" data-sort="members" onclick="pickCoopSort(this)">Maraming Kasapi</button>
     </div>
     <div id="coopList"></div>
@@ -26,11 +25,10 @@ function renderCoops(){
   const q = (document.getElementById('coopSearch')?.value || '').toLowerCase();
   let arr = DB.coops.filter(c => c.name.toLowerCase().includes(q) || c.loc.toLowerCase().includes(q));
   if(coopSort === 'near') arr.sort((a, b) => a.dist - b.dist);
-  if(coopSort === 'rating') arr.sort((a, b) => b.rating - a.rating);
   if(coopSort === 'members') arr.sort((a, b) => b.members - a.members);
   document.getElementById('coopList').innerHTML = arr.map(c => `
     <div class="card">
-      <div style="display:flex;justify-content:space-between;"><b>${c.name}</b><span class="pill">⭐ ${c.rating}</span></div>
+      <div><b>${c.name}</b></div>
       <p class="muted" style="font-size:12px;">📍 ${c.loc} (${c.dist} km) &nbsp; 👥 ${c.members} Kasapi</p>
       <div>${c.tags.map(t => `<span class="tag">${t}</span>`).join('')}</div>
       <button class="btn small secondary" style="margin-top:10px;" onclick="toast('Humiling ng koneksyon kay ${c.name}')">Kumonekta</button>

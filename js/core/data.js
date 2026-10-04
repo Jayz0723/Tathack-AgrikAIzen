@@ -20,15 +20,15 @@ function loadDB(){
     harvests: [],
     priceReports: [],
     buyers: [
-      {id:1,name:'Bulacan Organic Wholesalers',rating:4.9,dist:2.4,price:21.00,verified:true,type:'Wholesaler',contact:'0917-100-2001'},
-      {id:2,name:'Juan Dela Cruz Agri-Trading',rating:4.7,dist:4.1,price:20.80,verified:true,type:'Trader',contact:'0917-100-2002'},
-      {id:3,name:'Bustos Farmers Cooperative',rating:4.8,dist:1.2,price:20.50,verified:true,type:'Cooperative',contact:'0917-100-2003'},
-      {id:4,name:'Pangasinan Grains Corp',rating:4.5,dist:6.7,price:19.90,verified:false,type:'Trader',contact:'0917-100-2004'}
+      {id:1,name:'Bulacan Organic Wholesalers',dist:2.4,price:21.00,verified:true,type:'Wholesaler',contact:'0917-100-2001'},
+      {id:2,name:'Juan Dela Cruz Agri-Trading',dist:4.1,price:20.80,verified:true,type:'Trader',contact:'0917-100-2002'},
+      {id:3,name:'Bustos Farmers Cooperative',dist:1.2,price:20.50,verified:true,type:'Cooperative',contact:'0917-100-2003'},
+      {id:4,name:'Pangasinan Grains Corp',dist:6.7,price:19.90,verified:false,type:'Trader',contact:'0917-100-2004'}
     ],
     coops: [
-      {id:1,name:'Banaue Organic Rice Coop',loc:'Banaue, Ifugao',dist:2.4,rating:4.9,members:245,tags:['Patubig','Butil Dryer','Micro-loans']},
-      {id:2,name:'Benguet Highland Producers',loc:'La Trinidad, Benguet',dist:5.1,rating:4.8,members:480,tags:['Logistics','Cold Storage','Organic Seeds']},
-      {id:3,name:'Samahang Nayon Coop',loc:'Binalonan, Pangasinan',dist:0.8,rating:4.6,members:132,tags:['Storage','Training']}
+      {id:1,name:'Banaue Organic Rice Coop',loc:'Banaue, Ifugao',dist:2.4,members:245,tags:['Patubig','Butil Dryer','Micro-loans']},
+      {id:2,name:'Benguet Highland Producers',loc:'La Trinidad, Benguet',dist:5.1,members:480,tags:['Logistics','Cold Storage','Organic Seeds']},
+      {id:3,name:'Samahang Nayon Coop',loc:'Binalonan, Pangasinan',dist:0.8,members:132,tags:['Storage','Training']}
     ],
     plans: [
       {crop:'Palay (RC 218)', stage:'Yugto ng Pagpupunla (Sowing)', date:'2026-01-14'},

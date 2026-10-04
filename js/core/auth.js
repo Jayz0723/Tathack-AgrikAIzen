@@ -11,7 +11,6 @@ document.addEventListener('DOMContentLoaded', () => {
       <option value="farmer">Magsasaka (Farmer)</option>
       <option value="coop">Kooperatiba / Extension Worker</option>
       <option value="buyer">Mamimili (Buyer)</option>
-      <option value="admin">Admin</option>
     </select>
     <label>Pangalan</label>
     <input id="authName" placeholder="e.g. Mang Tomas dela Cruz">

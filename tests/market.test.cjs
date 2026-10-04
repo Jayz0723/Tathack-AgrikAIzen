@@ -72,13 +72,15 @@ test('scripts render bilingually; cancelled drafts stay private; published listi
  for(const file of ['app.js','marketplace.js','community.js','intelligence.js','flow.js'])vm.runInContext(fs.readFileSync(require('node:path').join(__dirname,'../js',file),'utf8'),ctx);
  vm.runInContext(`for(const lang of ['en','fil','ceb','ilo','hil']){state.lang=lang;startDemo('farmer');for(const page of ['home','prices','submit','buyers','profile','offers','estimate','coops','plan','oversupply','community'])go(page);startDemo('buyer');for(const page of ['home','harvests','offers','premium','community'])go(page);startDemo('logistics');for(const page of ['home','logistics','profile','community'])go(page);}`,ctx);
  await vm.runInContext(`(async()=>{
+  state.user=null;state.mode='register';assert.ok(!auth().includes("roleChoice('admin'"));assert.ok(!auth().includes('>Admin<'));
   startDemo('farmer');
   assert.equal(crops.length,15);assert.ok(cropOptions().includes('Talong'));assert.ok(!authHeader().includes('⌄'));assert.ok(header().includes('account-button'));
   for(const page of ['intelligence'])go(page);
   assert.ok(intelligencePage().includes('Market Intelligence'));
   const count=marketData().listings.length;
   state.draft={draftId:'cancel',crop:'palay',quality:'premium',farmingMethod:'organic',quantity:500,variety:'Cancelled',location:'Bustos',listingType:'fresh',harvestDate:'2026-10-02'};
-  await estimateListing();assert.ok(state.listingEstimate);assert.equal(marketData().listings.length,count);
+  await estimateListing();assert.ok(state.listingEstimate);assert.equal(marketData().listings.length,count);assert.ok(listingEstimate().includes('estimate-total'));assert.ok(listingEstimate().includes(money(state.listingEstimate.minimum*state.draft.quantity)));
+  assert.ok(!buyersPage().toLowerCase().includes('rating'));assert.ok(!coopsPage().toLowerCase().includes('rating'));assert.ok(!profile().toLowerCase().includes('rating'));
   cancelListing();assert.equal(state.draft,null);assert.equal(marketData().listings.length,count);
   state.draft={draftId:'publish',crop:'palay',quality:'standard',farmingMethod:'conventional',quantity:500,variety:'Test listing',location:'Bustos',listingType:'emergency',harvestDate:'2026-10-02'};
   await estimateListing();await publishListing({preventDefault(){}});

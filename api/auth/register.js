@@ -1,6 +1,8 @@
 const crypto = require('crypto');
 const { getUser, putUser, hashPassword, publicUser, sign, send, method } = require('../lib/store');
-const validRoles = new Set(['farmer','buyer','coop','logistics','admin']);
+// Administrator accounts are provisioned privately. Public registration must
+// never grant administrator access, even if a caller edits the browser form.
+const validRoles = new Set(['farmer','buyer','coop','logistics']);
 
 module.exports = async (req, res) => {
   if (!method(req,res)) return;

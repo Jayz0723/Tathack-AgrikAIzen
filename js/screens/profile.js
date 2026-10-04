@@ -9,7 +9,6 @@ document.addEventListener('DOMContentLoaded', () => {
       <p class="muted" id="profLoc">—</p>
       <div class="row" style="margin-top:14px;">
         <div class="stat"><b id="profHarvests">0</b><span class="muted" style="font-size:11px;">KABUUANG ANI</span></div>
-        <div class="stat"><b>4.8</b><span class="muted" style="font-size:11px;">RATING</span></div>
         <div class="stat"><b id="profIncome">₱0</b><span class="muted" style="font-size:11px;">KABUUANG KITA</span></div>
       </div>
     </div>

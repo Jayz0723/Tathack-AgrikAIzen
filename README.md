@@ -42,8 +42,8 @@ Persistent user storage is deliberately required in a Vercel deployment: an abse
 - Farmer flow: List harvest → crop details and listing type → AI price estimator → Publish listing or Cancel. Cancelling never creates a listing; repeat publication of the same draft is idempotent.
 - Types: pre-harvest, fresh harvest, emergency harvest. Quantity and prices use kg and PHP/kg.
 - Farmer profiles show only listings owned by the signed-in farmer.
-- Nearest shows buyer requests with crop, quantity, offered price and location. Records with known distances sort first; actual geocoding/distance calculation is not configured. Production listings without ratings are labelled Not yet rated; demo ratings are clearly sample data.
-- Highest price and Top rated show other farmers' listings. Highest price sorts descending; unrated listings sort after rated listings.
+- Buyer Requests shows crop, quantity, offered price and location. Matching requests appear first, then records with known distances.
+- Highest price shows other farmers' listings sorted by offered price.
 - Buyers can post public crop needs and send offers to a specific farmer listing. The farmer bell opens pending requests. AI-assisted offer assessment marks an offer fair or low against the listing's estimate, while leaving the accept, reject, and counter decision with the farmer.
 - Accepted offers reserve the confirmed quantity so the same harvest cannot be oversold. A confirmed deal then asks the farmer to choose a delivery partner, cooperative transport, or buyer pickup.
 - Logistics partners, cooperatives, and buyers receive only the delivery jobs appropriate to their role. The assigned provider accepts the job, starts delivery, and marks it complete.

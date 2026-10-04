@@ -76,7 +76,7 @@ function mutate(db, user, b) {
     if (user.role !== 'buyer') fail('Only buyers can post requests.',403);
     validateCrop(b); if (!number(b.price)||!date(b.requiredDate)) fail('Enter a valid price and required date.');
     const buyerTypes=['trader','restaurant','retailer','processor','institution','cooperative','individual'],buyerType=buyerTypes.includes(b.buyerType)?b.buyerType:'individual';
-    const request = {id,buyerId:user.id,buyer:user.name,buyerType,deliveryRequirements:text(b.deliveryRequirements,200)?b.deliveryRequirements.trim():'',crop:b.crop,quantity:b.quantity,price:b.price,location:b.location.trim(),requiredDate:b.requiredDate,rating:null,skippedBy:[],messages:[],createdAt};
+    const request = {id,buyerId:user.id,buyer:user.name,buyerType,deliveryRequirements:text(b.deliveryRequirements,200)?b.deliveryRequirements.trim():'',crop:b.crop,quantity:b.quantity,price:b.price,location:b.location.trim(),requiredDate:b.requiredDate,skippedBy:[],messages:[],createdAt};
     request.matchedFarmerIds=[...new Set(db.listings.filter(l=>matchingListings(db,request,l.farmerId).some(x=>x.id===l.id)).map(l=>l.farmerId))];
     db.requests.push(request); return request;
   }
