@@ -5,10 +5,10 @@ document.addEventListener('DOMContentLoaded', () => {
     <div class="topbar"><div class="iconbtn" onclick="go('screen-farmer-home')">←</div><h2>Iwas-Tapon Solusyon</h2></div>
     <div class="hero"><small>⭐ AI REKOMENDASYON</small><h2 style="color:#fff;font-size:18px;">Iproseso ang sobrang ani upang maiwasan ang lugi</h2></div>
     <h3>Mga Pamamaraan ng Pagpoproseso</h3>
-    <div class="card"><b>☀️ Pagpapatuyo (Drying)</b><p class="muted">Mainam para sa kamatis at sili. Pinahaba ang buhay ng 6 na buwan. ⏱ 2-3 araw</p></div>
-    <div class="card"><b>💧 Pagbuburo (Pickling)</b><p class="muted">Bagay sa singkamas, papaya, at sili. ⏱ 1 araw prep</p></div>
-    <div class="card"><b>🥤 Pagpupuree (Juice/Sauce)</b><p class="muted">Para sa labis na kamatis at mangga. ⏱ 4 oras</p></div>
-    <div class="card"><b>🌾 Pag-giling (Flour)</b><p class="muted">Iproseso ang kamote o saging upang maging kapaki-pakinabang na harina. ⏱ 1-2 araw</p></div>
+    <details class="card"><summary><b>☀️ Pagpapatuyo (Drying)</b></summary><p class="muted">Para sa kamatis, sili, mangga, at saging. Hugasan, hiwain nang pantay, takpan laban sa alikabok at insekto, at patuyuin nang lubos bago ilagay sa airtight na lalagyan. ⏱ 2–3 araw</p></details>
+    <details class="card"><summary><b>🫙 Pag-aatsara (Pickling)</b></summary><p class="muted">Para sa papaya, singkamas, pipino, carrots, at sili. Gumamit ng malinis na garapon at subok na recipe na may eksaktong sukat ng suka. Panatilihing refrigerated. ⏱ 1 araw prep</p></details>
+    <details class="card"><summary><b>🥤 Juice o Sarsa</b></summary><p class="muted">Para sa kamatis, mangga, pinya, at papaya. Alisin ang sirang prutas, lutuin ayon sa subok na recipe, at ilagay agad sa refrigerator. ⏱ 3–5 oras</p></details>
+    <details class="card"><summary><b>🌾 Pag-giling bilang Harina</b></summary><p class="muted">Para sa kamote o saging. Hiwain, patuyuin nang lubos, gilingin, salain, at itago sa malinis at tuyong lalagyan. ⏱ 1–2 araw</p></details>
     <div class="card badge-ok">💡 Payong AgrikAIzen: May mataas na demand ngayon sa dried mangoes.</div>
   `;
 });
