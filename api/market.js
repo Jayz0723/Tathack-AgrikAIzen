@@ -2,7 +2,7 @@ const crypto = require('crypto');
 const {command, getUser, verify, send, method} = require('./lib/store');
 const {notifyUsers, notifyRoles} = require('./lib/push');
 const KEY = 'agrikaizen:market:v1';
-const blank = () => ({listings:[], offers:[], requests:[], drafts:[], alerts:[], suppliers:[], recurring:[]});
+const blank = () => ({listings:[], offers:[], requests:[], drafts:[], alerts:[], suppliers:[], recurring:[], priceReports:[], assistedFarmers:[]});
 const fail = (message, status=400) => { throw Object.assign(new Error(message), {status}); };
 const number = (x) => typeof x === 'number' && Number.isFinite(x) && x > 0 && x <= 1e9;
 const text = (x, max=100) => typeof x === 'string' && x.trim().length > 0 && x.trim().length <= max;
@@ -28,7 +28,7 @@ function requestForUser(db,request,user){
   const listings=user.role==='farmer'?db.listings.filter(l=>l.farmerId===user.id&&l.status==='available'&&l.crop===request.crop):[],matches=user.role==='farmer'?matchingListings(db,request,user.id):[];
   const best=listings.sort((a,b)=>{const score=x=>(availableQuantity(db,x)>=request.quantity?25:0)+(x.price<=request.price?25:0)+(!request.requiredDate||x.harvestDate<=request.requiredDate?10:0)+(x.location===request.location?10:0);return score(b)-score(a)})[0];
   const matchScore=best?40+(availableQuantity(db,best)>=request.quantity?25:0)+(best.price<=request.price?25:0)+(!request.requiredDate||best.harvestDate<=request.requiredDate?10:0):0;
-  return {...request,matchListingIds:matches.map(l=>l.id),matchScore,matched:matches.length>0,skipped:(request.skippedBy||[]).includes(user.id),messages:(request.messages||[]).filter(m=>m.senderId===user.id||request.buyerId===user.id)};
+  return {...request,matchListingIds:matches.map(l=>l.id),matchScore,matched:matches.length>0,skipped:(request.skippedBy||[]).includes(user.id),messages:(request.messages||[]).filter(m=>request.buyerId===user.id||m.senderId===user.id||m.recipientId===user.id)};
 }
 function confirmTransaction(db, offer, now) {
   const listing=db.listings.find(l=>l.id===offer.listingId);
@@ -46,7 +46,7 @@ function deliveryActor(offer,user) {
 function visibleOffers(db,user) {
   if(user.role==='farmer')return db.offers.filter(o=>o.farmerId===user.id);
   if(user.role==='buyer')return db.offers.filter(o=>o.buyerId===user.id);
-  if(user.role==='coop')return db.offers.filter(o=>o.delivery?.method==='coop'&&(!o.delivery.providerId||o.delivery.providerId===user.id));
+  if(user.role==='coop')return db.offers.filter(o=>o.farmerId===user.id||(o.delivery?.method==='coop'&&(!o.delivery.providerId||o.delivery.providerId===user.id)));
   if(user.role==='logistics')return db.offers.filter(o=>o.delivery?.method==='partner'&&(!o.delivery.providerId||o.delivery.providerId===user.id));
   return user.role==='admin'?db.offers:[];
 }
@@ -75,7 +75,8 @@ function mutate(db, user, b) {
   if (b.action === 'request') {
     if (user.role !== 'buyer') fail('Only buyers can post requests.',403);
     validateCrop(b); if (!number(b.price)||!date(b.requiredDate)) fail('Enter a valid price and required date.');
-    const request = {id,buyerId:user.id,buyer:user.name,crop:b.crop,quantity:b.quantity,price:b.price,location:b.location.trim(),requiredDate:b.requiredDate,rating:null,skippedBy:[],messages:[],createdAt};
+    const buyerTypes=['trader','restaurant','retailer','processor','institution','cooperative','individual'],buyerType=buyerTypes.includes(b.buyerType)?b.buyerType:'individual';
+    const request = {id,buyerId:user.id,buyer:user.name,buyerType,deliveryRequirements:text(b.deliveryRequirements,200)?b.deliveryRequirements.trim():'',crop:b.crop,quantity:b.quantity,price:b.price,location:b.location.trim(),requiredDate:b.requiredDate,rating:null,skippedBy:[],messages:[],createdAt};
     request.matchedFarmerIds=[...new Set(db.listings.filter(l=>matchingListings(db,request,l.farmerId).some(x=>x.id===l.id)).map(l=>l.farmerId))];
     db.requests.push(request); return request;
   }
@@ -83,11 +84,19 @@ function mutate(db, user, b) {
     if(user.role!=='farmer')fail('Only farmers can skip buyer requests.',403);const request=db.requests.find(r=>r.id===b.id);if(!request)fail('Buyer request not found.',404);request.skippedBy=request.skippedBy||[];if(!request.skippedBy.includes(user.id))request.skippedBy.push(user.id);return request;
   }
   if (b.action === 'messageRequest') {
-    if(user.role!=='farmer')fail('Only farmers can message a buyer request.',403);const request=db.requests.find(r=>r.id===b.id);if(!request)fail('Buyer request not found.',404);if(!text(b.message,300))fail('Write a message with 1 to 300 characters.');request.messages=request.messages||[];request.messages.push({id,senderId:user.id,sender:user.name,message:b.message.trim(),createdAt});return request;
+    const request=db.requests.find(r=>r.id===b.id);if(!request)fail('Buyer request not found.',404);if(!text(b.message,300))fail('Write a message with 1 to 300 characters.');request.messages=request.messages||[];
+    let recipientId;
+    if(user.role==='farmer')recipientId=request.buyerId;
+    else if(user.role==='buyer'&&request.buyerId===user.id){recipientId=b.recipientId;if(!text(recipientId,120)||!(request.messages.some(m=>m.senderId===recipientId)||request.matchedFarmerIds?.includes(recipientId)))fail('Choose a farmer who has matched or contacted you.',403);}
+    else fail('This conversation is not available to your account.',403);
+    request.messages.push({id,senderId:user.id,sender:user.name,recipientId,message:b.message.trim(),createdAt});return request;
+  }
+  if (b.action === 'messageOffer') {
+    const offer=db.offers.find(o=>o.id===b.id);if(!offer)fail('Offer not found.',404);if(![offer.farmerId,offer.buyerId].includes(user.id))fail('This conversation is not available to your account.',403);if(!text(b.message,300))fail('Write a message with 1 to 300 characters.');offer.messages=offer.messages||[];const recipientId=user.id===offer.farmerId?offer.buyerId:offer.farmerId;offer.messages.push({id,senderId:user.id,sender:user.name,recipientId,message:b.message.trim(),createdAt});offer.updatedAt=createdAt;return offer;
   }
   if (b.action === 'respondRequest') {
     if(user.role!=='farmer')fail('Only farmers can respond to buyer requests.',403);const request=db.requests.find(r=>r.id===b.requestId),listing=db.listings.find(l=>l.id===b.listingId&&l.farmerId===user.id);if(!request||!listing)fail('Matching request or listing not found.',404);if(!matchingListings(db,request,user.id).some(l=>l.id===listing.id))fail('This listing does not meet the buyer request.',409);if(!number(b.quantity)||b.quantity>request.quantity||b.quantity>availableQuantity(db,listing)||!number(b.price))fail('Enter a valid quantity and price.');if(db.offers.some(o=>o.requestId===request.id&&o.farmerId===user.id&&!['rejected'].includes(o.status)))fail('You already responded to this request.',409);
-    const offer={id,requestId:request.id,listingId:listing.id,farmerId:user.id,farmer:user.name,buyerId:request.buyerId,buyer:request.buyer,location:listing.location,crop:listing.crop,variety:listing.variety,quantity:b.quantity,price:b.price,initiatedBy:'farmer',status:'farmer_proposal',transactionStatus:'buyer_review',createdAt};db.offers.push(offer);return offer;
+    const offer={id,requestId:request.id,listingId:listing.id,farmerId:user.id,farmer:listing.farmer||user.name,buyerId:request.buyerId,buyer:request.buyer,location:listing.location,crop:listing.crop,variety:listing.variety,quantity:b.quantity,price:b.price,initiatedBy:'farmer',messages:[],status:'farmer_proposal',transactionStatus:'buyer_review',createdAt};db.offers.push(offer);return offer;
   }
   if (b.action === 'respondRequestOffer') {
     const offer=db.offers.find(o=>o.id===b.id&&o.requestId&&o.buyerId===user.id&&o.status==='farmer_proposal');if(!offer||user.role!=='buyer')fail('Farmer proposal not found.',404);if(!['accepted','rejected','countered'].includes(b.status))fail('Invalid response.');
@@ -98,12 +107,12 @@ function mutate(db, user, b) {
     const listing = db.listings.find(l => l.id === b.listingId);
     if (!listing) fail('Listing not found.',404);
     if (listing.status!=='available'||!number(b.price) || !number(b.quantity) || b.quantity > availableQuantity(db,listing)) fail('Enter a valid price and available quantity.');
-    const offer = {id,listingId:listing.id,farmerId:listing.farmerId,buyerId:user.id,buyer:user.name,location:user.location,crop:listing.crop,variety:listing.variety,quantity:b.quantity,price:b.price,status:'pending',transactionStatus:'offer_review',...assessOffer(listing,b.price),createdAt};
+    const offer = {id,listingId:listing.id,farmerId:listing.farmerId,farmer:listing.farmer,buyerId:user.id,buyer:user.name,location:user.location,crop:listing.crop,variety:listing.variety,quantity:b.quantity,price:b.price,messages:[],assistedFarmerId:listing.assistedFarmerId||null,status:'pending',transactionStatus:'offer_review',...assessOffer(listing,b.price),createdAt};
     db.offers.push(offer); return offer;
   }
   if (b.action === 'respond') {
     const offer = db.offers.find(o => o.id === b.id);
-    if (!offer || user.role !== 'farmer' || offer.farmerId !== user.id) fail('Offer not found.',404);
+    if (!offer || !['farmer','coop'].includes(user.role) || offer.farmerId !== user.id) fail('Offer not found.',404);
     if (offer.status !== 'pending') fail('This offer has already been reviewed.',409);
     if (!['accepted','rejected','countered'].includes(b.status)) fail('Invalid response.');
     if (b.status === 'countered' && !number(b.price)) fail('Enter a valid counter price.');
@@ -206,7 +215,7 @@ module.exports = async (req,res) => {
     if (b.action === 'match') {
       if (!premium(user)) return send(res,403,{error:'Auto-matching requires Buyer Premium.'});
       validateCrop({...b,location:user.location}); if (!number(b.price)) fail('Enter a valid maximum price.');
-      const matches=db.listings.filter(l => l.status==='available' && l.crop===b.crop && l.availableQuantity>=b.quantity && l.price<=b.price && (!number(b.minimumPrice) || l.price>=b.minimumPrice) && (!b.requiredDate || l.harvestDate<=b.requiredDate) && (!b.quality || b.quality==='any' || l.quality===b.quality) && (!b.farmingMethod || b.farmingMethod==='any' || l.farmingMethod===b.farmingMethod) && (!number(b.distance) || !number(l.distance) || l.distance<=b.distance)).sort((a,b)=>a.price-b.price);
+      const matches=db.listings.filter(l => l.status==='available' && l.crop===b.crop && l.availableQuantity>=b.quantity && l.price<=b.price && (!number(b.minimumPrice) || l.price>=b.minimumPrice) && (!b.requiredDate || l.harvestDate<=b.requiredDate) && (!b.quality || b.quality==='any' || l.quality===b.quality) && (!b.farmingMethod || b.farmingMethod==='any' || l.farmingMethod===b.farmingMethod) && (!number(b.distance) || !number(l.distance) || l.distance<=b.distance)).map(l=>{const reasons=['crop','quantity','price'],sameArea=String(l.location).toLowerCase().includes(String(user.location).split(',').pop().trim().toLowerCase()),quality=!b.quality||b.quality==='any'||l.quality===b.quality,method=!b.farmingMethod||b.farmingMethod==='any'||l.farmingMethod===b.farmingMethod,dateFit=!b.requiredDate||l.harvestDate<=b.requiredDate;if(sameArea)reasons.push('location');if(quality)reasons.push('quality');if(method)reasons.push('farming-method');if(dateFit)reasons.push('delivery-date');const matchScore=Math.min(100,55+(sameArea?15:0)+(quality?10:0)+(method?10:0)+(dateFit?10:0));return {...l,matchScore,matchReasons:reasons}}).sort((a,b)=>b.matchScore-a.matchScore||a.price-b.price);
       return send(res,200,{matches,distanceNotice:matches.some(l=>!number(l.distance))});
     }
     const result = mutate(db,user,b);
@@ -217,7 +226,8 @@ module.exports = async (req,res) => {
       const list=Array.isArray(result)?result:[result],first=list[0];
       if(b.action==='offer'||b.action==='bulkOffer') await Promise.all(list.map(o=>notifyUsers([o.farmerId],'Bagong buyer offer',`${o.buyer} offered ₱${o.price}/kg for ${o.variety}.`,'offers',o.id)));
       if(b.action==='request'&&first.matchedFarmerIds?.length)await notifyUsers(first.matchedFarmerIds,'Bagong tugmang buyer request',`${first.buyer} needs ${first.quantity} kg at ₱${first.price}/kg.`,'buyers',first.id);
-      if(b.action==='messageRequest')await notifyUsers([first.buyerId],'Mensahe mula sa magsasaka',`${first.messages.at(-1).sender}: ${first.messages.at(-1).message}`,'offers',first.id);
+      if(b.action==='messageRequest')await notifyUsers([first.messages.at(-1).recipientId],'Bagong mensahe',`${first.messages.at(-1).sender}: ${first.messages.at(-1).message}`,'offers',first.id);
+      if(b.action==='messageOffer')await notifyUsers([first.messages.at(-1).recipientId],'Mensahe tungkol sa alok',`${first.messages.at(-1).sender}: ${first.messages.at(-1).message}`,'offers',first.id);
       if(b.action==='respondRequest')await notifyUsers([first.buyerId],'May magsasakang tumugon',`${first.farmer} can supply ${first.quantity} kg of ${first.variety}.`,'offers',first.id);
       if(['respond','respondCounter','respondRequestOffer'].includes(b.action)) await notifyUsers([first.buyerId,first.farmerId],'Na-update ang alok',`${first.variety}: ${first.status}.`,'offers',first.id);
       if(b.action==='selectDelivery') await (first.delivery.method==='partner'?notifyRoles(['logistics'],'Bagong delivery job',`${first.variety} delivery is available.`,'logistics',first.id):first.delivery.method==='coop'?notifyRoles(['coop'],'Bagong cooperative transport job',`${first.variety} delivery is available.`,'logistics',first.id):notifyUsers([first.buyerId],'Pickup requested',`${first.variety} is ready for buyer pickup.`,'logistics',first.id));

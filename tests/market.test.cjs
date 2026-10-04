@@ -69,10 +69,12 @@ test('market ownership, publishing, offers, validation and premium enforcement',
 test('scripts render bilingually; cancelled drafts stay private; published listings persist',async()=>{
  const vm=require('node:vm'),fs=require('node:fs');const storage=new Map();const element={value:'31',innerHTML:'',classList:{add(){},remove(){}},textContent:''};
  const ctx=vm.createContext({assert,crypto:require('node:crypto').webcrypto,console,Intl,Date,Number,JSON,setTimeout(){},clearTimeout(){},localStorage:{getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,v),removeItem:k=>storage.delete(k)},document:{querySelector:()=>element},window:{scrollTo(){}}});
- for(const file of ['app.js','marketplace.js','community.js','flow.js'])vm.runInContext(fs.readFileSync(require('node:path').join(__dirname,'../js',file),'utf8'),ctx);
+ for(const file of ['app.js','marketplace.js','community.js','intelligence.js','flow.js'])vm.runInContext(fs.readFileSync(require('node:path').join(__dirname,'../js',file),'utf8'),ctx);
  vm.runInContext(`for(const lang of ['en','fil','ceb','ilo','hil']){state.lang=lang;startDemo('farmer');for(const page of ['home','prices','submit','buyers','profile','offers','estimate','coops','plan','oversupply','community'])go(page);startDemo('buyer');for(const page of ['home','harvests','offers','premium','community'])go(page);startDemo('logistics');for(const page of ['home','logistics','profile','community'])go(page);}`,ctx);
  await vm.runInContext(`(async()=>{
   startDemo('farmer');
+  for(const page of ['intelligence'])go(page);
+  assert.ok(intelligencePage().includes('Market Intelligence'));
   const count=marketData().listings.length;
   state.draft={draftId:'cancel',crop:'palay',quality:'premium',farmingMethod:'organic',quantity:500,variety:'Cancelled',location:'Bustos',listingType:'fresh',harvestDate:'2026-10-02'};
   await estimateListing();assert.ok(state.listingEstimate);assert.equal(marketData().listings.length,count);

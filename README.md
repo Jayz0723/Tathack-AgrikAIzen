@@ -20,9 +20,10 @@ This project is a mobile-first web app for farmers, buyers, and cooperatives. It
    - `KV_REST_API_URL`
    - `KV_REST_API_TOKEN`
 3. Add a long random `AUTH_SECRET` value. This signs login sessions.
-4. Add `OPENAI_API_KEY` and optionally `OPENAI_MODEL` (defaults to `gpt-6-astra`). The key remains only in the serverless function and is never sent to the browser.
-5. To enable browser push notifications, generate a VAPID key pair and add `VAPID_SUBJECT`, `VAPID_PUBLIC_KEY`, and `VAPID_PRIVATE_KEY`. `VAPID_SUBJECT` should be a `mailto:` address or HTTPS URL.
-6. Deploy. Vercel installs the package dependencies and routes the API functions automatically.
+4. Add `OPENAI_API_KEY` and optionally `OPENAI_MODEL` (defaults to `gpt-5.6-luna`). The key remains only in the serverless function and is never sent to the browser.
+5. To connect a licensed government or institutional price feed, add `GOV_PRICE_API_URL` and, when required, `GOV_PRICE_API_TOKEN`. The endpoint must return a JSON array, or a `{ "data": [] }` object, containing `price`, `location`, `date`, and `source` fields. Imported records retain their source label. Without this configuration, the app honestly labels its intelligence as based on AgrikAIzen records.
+6. To enable browser push notifications, generate a VAPID key pair and add `VAPID_SUBJECT`, `VAPID_PUBLIC_KEY`, and `VAPID_PRIVATE_KEY`. `VAPID_SUBJECT` should be a `mailto:` address or HTTPS URL.
+7. Deploy. Vercel installs the package dependencies and routes the API functions automatically.
 
 Persistent user storage is deliberately required in a Vercel deployment: an absent KV configuration produces a clear server error instead of silently pretending user accounts were saved. During local development, the API uses a temporary in-memory store.
 
@@ -54,6 +55,22 @@ Persistent user storage is deliberately required in a Vercel deployment: an abse
 - Demo mode is explicitly separate: sample market records and changes use agri_market_demo_v1 in this browser. Demo estimates use sample guidance. Demo data is never sent to production.
 - The Community tab is available to every user role. Signed-in users share a persistent feed where they can publish categorized posts, react with Helpful, Support, or Celebrate, and add comments. Users can delete their own posts, while administrators can remove any post. The API enforces authorship and moderation permissions; demo community activity remains only in the current browser.
 - The PDF transaction flow is connected end to end. Farmers can save and resume private harvest drafts before publishing. Buyer requests include a needed-by date and are matched against a farmer's active crop, available quantity, listing price, and harvest date. Matching requests raise the farmer alert, appear first in the Buyer Requests screen, and support crop/area filtering, skip, and buyer messages. A farmer can propose a matching listing; the buyer can accept, reject, or counter, after which the existing AI offer check, farmer decision, delivery selection, logistics progress, commission, and payment breakdown continue normally.
+
+## Complete key-feature implementation
+
+- **Adaptive fair-price estimates:** community selling-price reports, completed transactions, and active listings contribute weighted evidence to the estimator. OpenAI receives the calculated market context and optional seven-day Open-Meteo weather summary. The deterministic fallback uses the same market records when OpenAI is unavailable.
+- **Supply and demand outlook:** the Market Intelligence page compares active available quantities with buyer-request quantities for each crop, labels shortage, balanced, or oversupply risk, and publishes a confidence level based on record coverage.
+- **Selling-time comparison:** the app compares selling now with a short wait using demand-to-supply ratio, observed price movement, and crop perishability. OpenAI can explain the result but cannot override or invent the supplied statistics.
+- **Price trends and regional comparison:** monthly weighted price history and location-level averages use community reports, verified completed transactions, and current listings. Every result displays its source coverage.
+- **Community price reporting:** farmers and cooperatives can submit actual sale date, quantity, price, buyer/market, and location. Completed transactions can be verified records; administrators can verify or reject community reports. Accepted records immediately affect future estimates without claiming that a foundation model was retrained.
+- **Configurable official feed:** administrators can import a configured government or institutional JSON feed. No source is presented as official until `GOV_PRICE_API_URL` is configured and the imported records include a source label.
+- **Intelligent matching:** Premium sourcing scores eligible suppliers using crop, quantity, price, date, location, quality, and farming method, then explains the matching factors. Farmers also receive crop/date/quantity/price buyer-request matches, while the intelligence page recommends crop-appropriate cooperatives.
+- **Direct communication:** buyer-request conversations support farmer messages and buyer replies. Every offer has a two-way negotiation thread alongside accept, reject, counter, delivery, and payment status.
+- **Assisted Farmer Mode:** a cooperative records a farmer's explicit consent, creates a managed profile, publishes a listing on the farmer's behalf, and manages the resulting buyer offer and logistics flow.
+- **Voice entry:** supported browsers can dictate harvest variety and location using the Web Speech API. Unsupported browsers receive a clear message and all fields remain usable by touch or keyboard.
+- **Post-harvest support:** the existing crop-processing guide remains available for drying, pickling, sauce or juice processing, and milling. Intelligence recommendations account for high-, medium-, and low-perishability crops.
+
+The prediction and trend features are decision support, not guaranteed forecasts. Their reliability depends on the quantity, recency, geographic coverage, and verification status of available records.
 
 ### Verification
 
