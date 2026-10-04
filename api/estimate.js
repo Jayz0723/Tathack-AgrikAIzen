@@ -1,5 +1,5 @@
 const { send, method, command } = require('./lib/store');
-const {intelligence, weather} = require('./intelligence');
+const {intelligence, weather, externalPrices, withOfficial} = require('./intelligence');
 const MARKET_KEY='agrikaizen:market:v1';
 const base = { palay:27, mais:18, kamatis:52, sibuyas:64, saging:24, talong:48, sili:95, pechay:42, repolyo:38, patatas:70, kamote:36, mangga:65, pinya:35, papaya:32, niyog:28 };
 const names = { palay:'Palay (rice)', mais:'Mais (corn)', kamatis:'Kamatis (tomato)', sibuyas:'Sibuyas (onion)', saging:'Saging (banana)', talong:'Talong (eggplant)', sili:'Sili (chili pepper)', pechay:'Pechay (bok choy)', repolyo:'Repolyo (cabbage)', patatas:'Patatas (potato)', kamote:'Kamote (sweet potato)', mangga:'Mangga (mango)', pinya:'Pinya (pineapple)', papaya:'Papaya', niyog:'Niyog (coconut)' };
@@ -14,10 +14,10 @@ module.exports = async (req,res) => {
   if (!method(req,res)) return;
   const input = req.body || {};
   if (!base[input.crop] || !['premium','standard','low'].includes(input.quality) || !Number.isFinite(input.quantity) || input.quantity < 1 || !input.location || !input.harvestDate) return send(res,400,{error:'Punan ang lahat ng detalye ng ani.'});
-  let market=null,weatherData=null;
-  try{const raw=await command(['GET',MARKET_KEY]),db=raw?JSON.parse(raw):{};market=intelligence({listings:[],offers:[],requests:[],priceReports:[],...db},input.crop,input.location);}catch(error){console.error('market context unavailable',error)}
+  let market=null,weatherData=null,officialRecords=0;
+  try{const raw=await command(['GET',MARKET_KEY]),db={listings:[],offers:[],requests:[],priceReports:[],...(raw?JSON.parse(raw):{})};let official=[];try{official=await externalPrices(input.crop,input.location);officialRecords=official.length}catch(error){console.error('official price context unavailable',error)}market=intelligence(withOfficial(db,official),input.crop,input.location);}catch(error){console.error('market context unavailable',error)}
   try{weatherData=await weather(input.location)}catch(error){console.error('weather context unavailable',error)}
-  if (!process.env.OPENAI_API_KEY) return send(res,200,{...fallback(input,market),weather:weatherData});
+  if (!process.env.OPENAI_API_KEY) return send(res,200,{...fallback(input,market),officialRecords,weather:weatherData});
   try {
     const OpenAI=require('openai');
     const client = new OpenAI({ apiKey:process.env.OPENAI_API_KEY });
@@ -25,6 +25,6 @@ module.exports = async (req,res) => {
     const response = await client.responses.create({ model:process.env.OPENAI_MODEL || 'gpt-5.6-luna', instructions:instruction, input:JSON.stringify({crop:names[input.crop],quality:input.quality,quantityKg:input.quantity,location:String(input.location).slice(0,100),expectedHarvest:input.harvestDate,market:market||{referenceBaseline:base[input.crop]},weather:weatherData}) });
     const text = response.output_text.replace(/^```json\s*|\s*```$/g,'').trim(); const result = JSON.parse(text);
     if (!Number.isFinite(result.minimum) || !Number.isFinite(result.maximum) || !Array.isArray(result.tips)) throw new Error('Invalid model response');
-    return send(res,200,{minimum:Math.max(1,Math.round(result.minimum)),maximum:Math.max(1,Math.round(result.maximum)),confidence:Math.min(90,Math.max(40,Math.round(result.confidence||70))),bestTime:String(result.bestTime||''),tips:result.tips.slice(0,3).map(String),source:'openai',marketRecords:market?.fairPrice?.records||0,weather:weatherData});
-  } catch (error) { console.error('estimate failed',error); return send(res,200,{...fallback(input,market),weather:weatherData,notice:'AI service is temporarily unavailable; showing adaptive market guidance.'}); }
+    return send(res,200,{minimum:Math.max(1,Math.round(result.minimum)),maximum:Math.max(1,Math.round(result.maximum)),confidence:Math.min(90,Math.max(40,Math.round(result.confidence||70))),bestTime:String(result.bestTime||''),tips:result.tips.slice(0,3).map(String),source:'openai',marketRecords:market?.fairPrice?.records||0,officialRecords,weather:weatherData});
+  } catch (error) { console.error('estimate failed',error); return send(res,200,{...fallback(input,market),officialRecords,weather:weatherData,notice:'AI service is temporarily unavailable; showing adaptive market guidance.'}); }
 };

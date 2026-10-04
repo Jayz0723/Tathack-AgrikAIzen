@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const {command, getUser, verify, send, method} = require('./lib/store');
+const {fetchPSAPrices, SOURCE:PSA_SOURCE} = require('./lib/psa-openstat');
 
 const KEY = 'agrikaizen:market:v1';
 const CROPS = ['palay','mais','kamatis','sibuyas','saging','talong','sili','pechay','repolyo','patatas','kamote','mangga','pinya','papaya','niyog'];
@@ -55,15 +56,25 @@ function intelligence(db,crop,location) {
   const byLocation=Object.entries(rows.reduce((acc,row)=>{const key=row.location||'Unspecified';(acc[key]||(acc[key]=[])).push(row);return acc},{})).map(([name,list])=>({location:name,price:weightedAverage(list),records:list.length})).sort((a,b)=>b.price-a.price);
   const terms=String(location||'').toLowerCase().split(/[,\s]+/).filter(x=>x.length>2);
   const cooperatives=COOPERATIVES.map(coop=>({...coop,matchScore:40+(coop.crops.includes(crop)?35:0)+(terms.some(term=>coop.location.toLowerCase().includes(term))?20:0)+(coop.services.includes('buyer-linkage')?5:0)})).sort((a,b)=>b.matchScore-a.matchScore);
-  return {crop,fairPrice:{minimum,maximum,center,records:rows.length},supplyDemand:{supply,demand,ratio:round(ratio),status,confidence:Math.min(90,45+rows.length*4),forecast},trend:{direction:trend>1?'up':trend<-1?'down':'stable',change:trend,monthly},sellTiming:{recommendation,sellNowScore,waitScore,waitDays,perishability},markets:byLocation.slice(0,8),cooperatives:cooperatives.slice(0,3),sources:{community:db.priceReports.filter(r=>r.crop===crop&&r.status!=='rejected').length,transactions:db.offers.filter(o=>o.crop===crop&&o.status==='accepted').length,listings:db.listings.filter(l=>l.crop===crop&&l.status==='available').length,externalConfigured:Boolean(process.env.GOV_PRICE_API_URL)}};
+  const cropReports=db.priceReports.filter(r=>r.crop===crop&&r.status!=='rejected'),official=cropReports.filter(r=>r.marketType==='official-farmgate'||r.marketType==='official-feed');
+  return {crop,fairPrice:{minimum,maximum,center,records:rows.length},supplyDemand:{supply,demand,ratio:round(ratio),status,confidence:Math.min(90,45+rows.length*4),forecast},trend:{direction:trend>1?'up':trend<-1?'down':'stable',change:trend,monthly},sellTiming:{recommendation,sellNowScore,waitScore,waitDays,perishability},markets:byLocation.slice(0,8),cooperatives:cooperatives.slice(0,3),sources:{community:cropReports.filter(r=>!official.includes(r)).length,official:official.length,officialSource:PSA_SOURCE,transactions:db.offers.filter(o=>o.crop===crop&&o.status==='accepted').length,listings:db.listings.filter(l=>l.crop===crop&&l.status==='available').length,externalConfigured:true}};
 }
-async function externalPrices(crop,location) {
+async function customExternalPrices(crop,location) {
   if(!process.env.GOV_PRICE_API_URL)return [];
   const url=new URL(process.env.GOV_PRICE_API_URL);url.searchParams.set('crop',crop);if(location)url.searchParams.set('location',location);
   const headers={Accept:'application/json'};if(process.env.GOV_PRICE_API_TOKEN)headers.Authorization=`Bearer ${process.env.GOV_PRICE_API_TOKEN}`;
   const response=await fetch(url,{headers,signal:AbortSignal.timeout(6000)});if(!response.ok)throw new Error('External price source is temporarily unavailable.');
   const payload=await response.json(),items=Array.isArray(payload)?payload:Array.isArray(payload.data)?payload.data:[];
   return items.slice(0,100).map(item=>({crop,price:Number(item.price),location:clean(item.location||location),saleDate:String(item.date||new Date().toISOString()).slice(0,10),sourceName:clean(item.source||'Government price feed'),status:'verified'})).filter(item=>positive(item.price));
+}
+async function externalPrices(crop,location,options) {
+  const psa=await fetchPSAPrices(crop,location,options);let custom=[];try{custom=await customExternalPrices(crop,location)}catch(error){console.error('additional external feed unavailable',error)}
+  return [...psa,...custom];
+}
+function withOfficial(db,items,reporterId='psa-openstat') {
+  if(!items.length)return db;
+  const copy={...db,priceReports:[...db.priceReports]},byKey=new Map(copy.priceReports.filter(x=>x.sourceKey).map(x=>[x.sourceKey,x]));
+  for(const item of items){const record={id:`official-${item.sourceKey||crypto.randomUUID()}`,reporterId,reporter:item.sourceName||'Official data import',quantity:null,createdAt:new Date().toISOString(),...item};const old=item.sourceKey&&byKey.get(item.sourceKey);if(old)Object.assign(old,record,{id:old.id,createdAt:old.createdAt});else copy.priceReports.push(record)}return copy;
 }
 async function weather(location) {
   if(!location)return null;
@@ -94,12 +105,13 @@ module.exports=async(req,res)=>{
     const {raw,db}=await loadDb();
     if(action==='read')return send(res,200,{...intelligence(db,crop,location),assistedFarmers:db.assistedFarmers.filter(x=>x.coopId===user.id),reports:db.priceReports.filter(x=>user.role==='admin'||x.reporterId===user.id).slice(-20).reverse()});
     if(action==='analyze'){
-      const summary=intelligence(db,crop,location);let weatherData=null;try{weatherData=await weather(location)}catch(error){console.error('weather unavailable',error)}
-      return send(res,200,{...summary,weather:weatherData,narrative:await aiNarrative(summary,body.language,location,weatherData)});
+      let official=[],officialError=null;try{official=await externalPrices(crop,location)}catch(error){officialError='PSA OpenSTAT is temporarily unavailable.';console.error('official prices unavailable',error)}
+      const summary=intelligence(withOfficial(db,official),crop,location);let weatherData=null;try{weatherData=await weather(location)}catch(error){console.error('weather unavailable',error)}
+      return send(res,200,{...summary,officialData:{source:PSA_SOURCE,records:official.length,latestDate:official[0]?.saleDate||null,error:officialError},weather:weatherData,narrative:await aiNarrative(summary,body.language,location,weatherData)});
     }
     if(action==='syncExternal'){
       if(user.role!=='admin')fail('Only administrators can import external prices.',403);
-      const imported=await externalPrices(crop,location);for(const item of imported)db.priceReports.push({id:crypto.randomUUID(),reporterId:user.id,reporter:'External data import',quantity:null,marketType:'official-feed',createdAt:new Date().toISOString(),...item});await saveDb(raw,db);return send(res,200,{result:{imported:imported.length}});
+      const imported=await externalPrices(crop,location,{force:true}),updated=withOfficial(db,imported,user.id);await saveDb(raw,updated);return send(res,200,{result:{imported:imported.length,source:PSA_SOURCE}});
     }
     if(action==='reportPrice'){
       if(user.role!=='farmer'&&user.role!=='coop')fail('Only farmers and cooperatives can report selling prices.',403);
@@ -126,3 +138,5 @@ module.exports=async(req,res)=>{
 
 module.exports.intelligence=intelligence;
 module.exports.weather=weather;
+module.exports.externalPrices=externalPrices;
+module.exports.withOfficial=withOfficial;
