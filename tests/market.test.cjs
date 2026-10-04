@@ -31,6 +31,8 @@ test('market ownership, publishing, offers, validation and premium enforcement',
  assert.equal((await call(buyer,{action:'read'})).offers.length,3);
  const buyerRequest=await call(buyer,{action:'request',crop:'palay',quantity:50,price:30,location:'Bustos',requiredDate:'2026-10-20'});assert.equal(buyerRequest.status,200);
  assert.equal((await call(farmer,{action:'read'})).requests.length,1);
+ const farmerMessage=await call(farmer,{action:'messageRequest',id:buyerRequest.result.id,message:'Available po ang ani. Pickup po ba?'});assert.equal(farmerMessage.status,200);
+ const buyerReply=await call(buyer,{action:'messageRequest',id:buyerRequest.result.id,recipientId:farmer.id,message:'Oo, buyer pickup po.'});assert.equal(buyerReply.status,200);assert.equal(buyerReply.result.messages.length,2);
  assert.equal((await call(buyer,{action:'match',crop:'palay',quantity:50,price:30,premium:true})).status,403);
  buyer.plan='pro';await putUser(buyer);
  assert.equal((await call(buyer,{action:'match',crop:'palay',quantity:50,minimumPrice:25,price:30,requiredDate:'2026-10-15',quality:'premium',farmingMethod:'organic',distance:25})).matches.length,1);
@@ -81,6 +83,7 @@ test('scripts render bilingually; cancelled drafts stay private; published listi
   for(const page of ['intelligence'])go(page);
   assert.ok(intelligencePage().includes('Market Intelligence'));
   const count=marketData().listings.length;
+  const messageRequest=marketData().requests[0];openRequestMessage(messageRequest.id);assert.ok(buyersPage().includes('requestMessageForm-'+messageRequest.id));await messageBuyerRequest({preventDefault(){},target:{querySelector(){return {disabled:false,textContent:''}}}},messageRequest.id);assert.equal(state.requestMessageId,messageRequest.id);assert.ok(marketData().requests.find(r=>r.id===messageRequest.id).messages.length>0);
   state.draft={draftId:'cancel',crop:'palay',quality:'premium',farmingMethod:'organic',quantity:500,variety:'Cancelled',location:'Bustos',listingType:'fresh',harvestDate:'2026-10-02'};
   await estimateListing();assert.ok(state.listingEstimate);assert.equal(marketData().listings.length,count);assert.ok(listingEstimate().includes('estimate-total'));assert.ok(listingEstimate().includes(money(state.listingEstimate.minimum*state.draft.quantity)));
   assert.ok(!buyersPage().toLowerCase().includes('rating'));assert.ok(!coopsPage().toLowerCase().includes('rating'));assert.ok(!profile().toLowerCase().includes('rating'));
