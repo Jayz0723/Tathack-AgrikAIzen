@@ -1,8 +1,8 @@
 const { send, method, command } = require('./lib/store');
 const {intelligence, weather} = require('./intelligence');
 const MARKET_KEY='agrikaizen:market:v1';
-const base = { palay:27, mais:18, kamatis:52, sibuyas:64, saging:24 };
-const names = { palay:'Palay (rice)', mais:'Mais (corn)', kamatis:'Kamatis (tomato)', sibuyas:'Sibuyas (onion)', saging:'Saging (banana)' };
+const base = { palay:27, mais:18, kamatis:52, sibuyas:64, saging:24, talong:48, sili:95, pechay:42, repolyo:38, patatas:70, kamote:36, mangga:65, pinya:35, papaya:32, niyog:28 };
+const names = { palay:'Palay (rice)', mais:'Mais (corn)', kamatis:'Kamatis (tomato)', sibuyas:'Sibuyas (onion)', saging:'Saging (banana)', talong:'Talong (eggplant)', sili:'Sili (chili pepper)', pechay:'Pechay (bok choy)', repolyo:'Repolyo (cabbage)', patatas:'Patatas (potato)', kamote:'Kamote (sweet potato)', mangga:'Mangga (mango)', pinya:'Pinya (pineapple)', papaya:'Papaya', niyog:'Niyog (coconut)' };
 
 function fallback({ crop, quality, quantity, language },market) {
   const b = market?.fairPrice?.center || base[crop] || 25, modifier = quality === 'premium' ? 1.12 : quality === 'low' ? .84 : 1;

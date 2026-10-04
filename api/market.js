@@ -6,7 +6,7 @@ const blank = () => ({listings:[], offers:[], requests:[], drafts:[], alerts:[],
 const fail = (message, status=400) => { throw Object.assign(new Error(message), {status}); };
 const number = (x) => typeof x === 'number' && Number.isFinite(x) && x > 0 && x <= 1e9;
 const text = (x, max=100) => typeof x === 'string' && x.trim().length > 0 && x.trim().length <= max;
-const cropIds = ['palay','mais','kamatis','sibuyas','saging'];
+const cropIds = ['palay','mais','kamatis','sibuyas','saging','talong','sili','pechay','repolyo','patatas','kamote','mangga','pinya','papaya','niyog'];
 const date = x => /^\d{4}-\d{2}-\d{2}$/.test(x || '') && Number.isFinite(Date.parse(x));
 const premium = user => user.role === 'buyer' && user.plan === 'premium';
 const requirePremium = user => { if (!premium(user)) fail('This tool requires Buyer Premium.',403); };

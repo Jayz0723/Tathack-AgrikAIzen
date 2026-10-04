@@ -73,6 +73,7 @@ test('scripts render bilingually; cancelled drafts stay private; published listi
  vm.runInContext(`for(const lang of ['en','fil','ceb','ilo','hil']){state.lang=lang;startDemo('farmer');for(const page of ['home','prices','submit','buyers','profile','offers','estimate','coops','plan','oversupply','community'])go(page);startDemo('buyer');for(const page of ['home','harvests','offers','premium','community'])go(page);startDemo('logistics');for(const page of ['home','logistics','profile','community'])go(page);}`,ctx);
  await vm.runInContext(`(async()=>{
   startDemo('farmer');
+  assert.equal(crops.length,15);assert.ok(cropOptions().includes('Talong'));assert.ok(!authHeader().includes('⌄'));assert.ok(header().includes('account-button'));
   for(const page of ['intelligence'])go(page);
   assert.ok(intelligencePage().includes('Market Intelligence'));
   const count=marketData().listings.length;
@@ -84,7 +85,7 @@ test('scripts render bilingually; cancelled drafts stay private; published listi
   assert.equal(marketData().listings.length,count+1);assert.equal(state.page,'profile');
   assert.ok(profile().includes('Test listing'));assert.ok(!profile().includes('Kamatis Diamante'));
   assert.equal(marketData().listings.at(-1).listingType,'emergency');
-  const cropPlan=buildCropPlan('kamatis');assert.equal(cropPlan.crop,'kamatis');assert.ok(cropPlan.harvestStart>cropPlan.plantStart);assert.ok(pricesPage().includes('₱'));
+  const cropPlan=buildCropPlan('kamatis');assert.equal(cropPlan.crop,'kamatis');assert.ok(cropPlan.harvestStart>cropPlan.plantStart);const addedCropPlan=buildCropPlan('pechay');assert.ok(addedCropPlan.harvestStart>addedCropPlan.plantStart);assert.ok(pricesPage().includes('Talong'));assert.ok(pricesPage().includes('🥭'));assert.ok(pricesPage().includes('₱'));
   startDemo('buyer');
   for(const [tab,label] of [['source','Smart Sourcing'],['alerts','Harvest Alerts'],['suppliers','Supplier Management'],['orders','Recurring Orders'],['insights','Business Procurement Analytics']]){state.premiumTab=tab;assert.ok(premiumPage().includes(label),tab)}
   startDemo('farmer');await communityWrite({action:'createPost',text:'Demo community post',category:'general'});const post=communityData().posts.find(p=>p.text==='Demo community post');assert.ok(post);await communityWrite({action:'toggleReaction',postId:post.id,reaction:'helpful'});assert.equal(communityData().posts.find(p=>p.id===post.id).reactions.helpful,1);await communityWrite({action:'addComment',postId:post.id,text:'Demo comment'});assert.equal(communityData().posts.find(p=>p.id===post.id).comments.length,1);await communityWrite({action:'deletePost',postId:post.id});assert.equal(communityData().posts.some(p=>p.id===post.id),false);

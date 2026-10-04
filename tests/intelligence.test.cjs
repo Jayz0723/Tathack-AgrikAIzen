@@ -13,9 +13,9 @@ async function call(handler,user,body){let status,data;await handler({method:'PO
 test('community prices improve intelligence and can be reviewed',async()=>{
   for(const user of [farmer,coop,buyer,admin])await putUser(user);
   assert.equal((await call(intelligenceApi,null,{action:'read'})).status,401);
-  const report=await call(intelligenceApi,farmer,{action:'reportPrice',crop:'sibuyas',price:72,quantity:90,saleDate:'2026-10-02',location:'Bustos, Bulacan',buyerName:'Public market'});
+  const report=await call(intelligenceApi,farmer,{action:'reportPrice',crop:'talong',price:72,quantity:90,saleDate:'2026-10-02',location:'Bustos, Bulacan',buyerName:'Public market'});
   assert.equal(report.status,200);assert.equal(report.result.status,'community');
-  const read=await call(intelligenceApi,farmer,{action:'read',crop:'sibuyas',location:'Bustos'});
+  const read=await call(intelligenceApi,farmer,{action:'read',crop:'talong',location:'Bustos'});
   assert.equal(read.status,200);assert.equal(read.sources.community,1);assert.equal(read.fairPrice.center,72);assert.ok(read.sellTiming.sellNowScore>=25);
   assert.equal((await call(intelligenceApi,buyer,{action:'moderateReport',id:report.result.id,status:'verified'})).status,403);
   assert.equal((await call(intelligenceApi,admin,{action:'moderateReport',id:report.result.id,status:'verified'})).result.status,'verified');
