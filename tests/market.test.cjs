@@ -77,13 +77,13 @@ test('scripts render bilingually; cancelled drafts stay private; published listi
  for(const file of ['app.js','marketplace.js','community.js','intelligence.js','flow.js'])vm.runInContext(fs.readFileSync(require('node:path').join(__dirname,'../js',file),'utf8'),ctx);
  vm.runInContext(`for(const lang of ['en','fil','ceb','ilo','hil']){state.lang=lang;startDemo('farmer');for(const page of ['home','prices','submit','buyers','profile','offers','estimate','coops','plan','oversupply','community'])go(page);startDemo('buyer');for(const page of ['home','harvests','offers','premium','community'])go(page);startDemo('logistics');for(const page of ['home','logistics','profile','community'])go(page);}`,ctx);
  await vm.runInContext(`(async()=>{
-  state.user=null;state.mode='register';assert.ok(!auth().includes("roleChoice('admin'"));assert.ok(!auth().includes('>Admin<'));
+  state.user=null;state.mode='register';assert.ok(!auth().includes("roleChoice('admin')"));assert.ok(!auth().includes('>Admin<'));
   startDemo('farmer');
-  assert.equal(crops.length,15);assert.ok(cropOptions().includes('Talong'));assert.ok(!authHeader().includes('⌄'));assert.ok(header().includes('account-button'));
+  assert.equal(crops.length,15);assert.ok(cropOptions().includes('Talong'));assert.ok(!authHeader().includes('⌄'));assert.ok(header().includes('account-button'));assert.ok(home().includes('assets/crops/palay.jpg'));assert.ok(home().includes('assets/crops/mais.jpg'));assert.ok(home().includes('assets/crops/kamatis.jpg'));
   for(const page of ['intelligence'])go(page);
   assert.ok(intelligencePage().includes('Market Intelligence'));
   const count=marketData().listings.length;
-  const messageRequest=marketData().requests[0];openRequestMessage(messageRequest.id);assert.ok(buyersPage().includes('requestMessageForm-'+messageRequest.id));await messageBuyerRequest({preventDefault(){},target:{querySelector(){return {disabled:false,textContent:''}}}},messageRequest.id);assert.equal(state.requestMessageId,messageRequest.id);assert.ok(marketData().requests.find(r=>r.id===messageRequest.id).messages.length>0);
+  const messageRequest=marketData().requests[0];openRequestMessage(messageRequest.id);assert.ok(buyersPage().includes('requestMessageForm-'+messageRequest.id));assert.ok(buyersPage().includes('assets/crops/'+messageRequest.crop+'.jpg'));await messageBuyerRequest({preventDefault(){},target:{querySelector(){return {disabled:false,textContent:''}}}},messageRequest.id);assert.equal(state.requestMessageId,messageRequest.id);assert.ok(marketData().requests.find(r=>r.id===messageRequest.id).messages.length>0);
   state.draft={draftId:'cancel',crop:'palay',quality:'premium',farmingMethod:'organic',quantity:500,variety:'Cancelled',location:'Bustos',listingType:'fresh',harvestDate:'2026-10-02'};
   await estimateListing();assert.ok(state.listingEstimate);assert.equal(marketData().listings.length,count);assert.ok(listingEstimate().includes('estimate-total'));assert.ok(listingEstimate().includes(money(state.listingEstimate.minimum*state.draft.quantity)));
   assert.ok(!buyersPage().toLowerCase().includes('rating'));assert.ok(!coopsPage().toLowerCase().includes('rating'));assert.ok(!profile().toLowerCase().includes('rating'));
@@ -91,7 +91,7 @@ test('scripts render bilingually; cancelled drafts stay private; published listi
   state.draft={draftId:'publish',crop:'palay',quality:'standard',farmingMethod:'conventional',quantity:500,variety:'Test listing',location:'Bustos',listingType:'emergency',harvestDate:'2026-10-02'};
   await estimateListing();await publishListing({preventDefault(){}});
   assert.equal(marketData().listings.length,count+1);assert.equal(state.page,'profile');
-  assert.ok(profile().includes('Test listing'));assert.ok(!profile().includes('Kamatis Diamante'));
+  assert.ok(profile().includes('Test listing'));assert.ok(profile().includes('assets/crops/palay.jpg'));assert.ok(!profile().includes('Kamatis Diamante'));
   assert.equal(marketData().listings.at(-1).listingType,'emergency');
   const cropPlan=buildCropPlan('kamatis');assert.equal(cropPlan.crop,'kamatis');assert.ok(cropPlan.harvestStart>cropPlan.plantStart);const addedCropPlan=buildCropPlan('pechay');assert.ok(addedCropPlan.harvestStart>addedCropPlan.plantStart);const prices=pricesPage();assert.ok(prices.includes('Talong'));assert.ok(prices.includes('assets/crops/mangga.jpg'));assert.ok(prices.includes("openPriceEstimator('palay'"));assert.ok(prices.includes('₱'));openPriceEstimator('palay',27,27);assert.equal(state.page,'estimate');assert.equal(state.estimateCrop,'palay');const selectedEstimator=estimator();assert.ok(selectedEstimator.includes('value="palay" selected'));assert.ok(selectedEstimator.includes('selected-price-guide'));assert.ok(selectedEstimator.includes('₱27'));
   const guide=oversupplyPage();assert.equal((guide.match(/<details/g)||[]).length,4);assert.ok(guide.includes('process-chevron'));assert.ok(guide.includes('Mga hakbang'));assert.ok(guide.includes('Kagamitan'));assert.ok(!guide.includes('class="card process-row"'));
