@@ -37,7 +37,7 @@ Persistent user storage is deliberately required in a Vercel deployment: an abse
 
 - Readability update: the app uses larger type, stronger contrast, 48–54 px controls, clearer button wording, and an enlarged bottom navigation designed for farmers with limited eyesight or smartphone experience. Demo roles are shown as separate bordered choices.
 - The Wika menu supports English and Tagalog throughout the app. Cebuano, Ilocano, and Hiligaynon are available as beta choices with translated core navigation; untranslated text falls back to Tagalog and is labelled honestly in the selector.
-- Today’s Prices now opens a dedicated list of every supported crop. It uses active listing prices when available and clearly labels fallback guide prices. The AI estimator remains a separate action.
+- Today’s Prices opens a dedicated list of every supported crop using clear crop photographs. Each large price card opens the AI estimator immediately with that crop and its current displayed price preselected. It uses active listing prices when available and clearly labels fallback guide prices.
 - Crop Planning accepts the crop and location, then calculates the next recommended planting window and estimated harvest window using common Philippine growing seasons and crop-duration ranges. Results state that local weather, variety, soil, and municipal agriculture guidance can change the schedule.
 - Farmer flow: List harvest → crop details and listing type → AI price estimator → Publish listing or Cancel. Cancelling never creates a listing; repeat publication of the same draft is idempotent.
 - Types: pre-harvest, fresh harvest, emergency harvest. Quantity and prices use kg and PHP/kg.
