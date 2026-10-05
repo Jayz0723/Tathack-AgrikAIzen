@@ -80,6 +80,7 @@ test('scripts render bilingually; cancelled drafts stay private; published listi
   state.user=null;state.mode='register';assert.ok(!auth().includes("roleChoice('admin')"));assert.ok(!auth().includes('>Admin<'));
   startDemo('farmer');
   assert.equal(crops.length,15);assert.ok(cropOptions().includes('Talong'));assert.ok(!authHeader().includes('⌄'));assert.ok(header().includes('account-button'));assert.ok(home().includes('assets/crops/palay.jpg'));assert.ok(home().includes('assets/crops/mais.jpg'));assert.ok(home().includes('assets/crops/kamatis.jpg'));
+  navigator={userAgent:'FBAN/Messenger'};window.navigator=navigator;window.isSecureContext=true;assert.ok(pushEnvironmentIssue().includes('Chrome'));assert.ok(pushErrorMessage(new Error('Registration failed - push service error')).includes('Chrome'));
   for(const page of ['intelligence'])go(page);
   assert.ok(intelligencePage().includes('Market Intelligence'));
   const count=marketData().listings.length;
