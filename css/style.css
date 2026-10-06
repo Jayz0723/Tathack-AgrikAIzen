@@ -67,3 +67,7 @@ html{font-size:18px}body{font-family:Arial,"Segoe UI",sans-serif;line-height:1.5
 /* Actionable browser guidance for web push */
 .push-guidance{padding:16px;border:2px solid #d6ad37;border-radius:16px;background:#fff8d8;color:#584300;font-size:.95rem}
 .push-guidance b,.push-guidance span{display:block}.push-guidance b{margin-bottom:6px;color:#3f3100;font-size:1rem}.push-guidance span{line-height:1.55}
+
+/* Free buyer sponsorship; paid buyer plans remain ad-free */
+.sponsored-placement{border:2px dashed #c9a53b;background:linear-gradient(145deg,#fffbea,#fff)}
+.sponsored-placement h3{margin:8px 0 6px}.sponsored-placement p{margin-bottom:8px;color:var(--muted);font-size:.92rem;line-height:1.5}

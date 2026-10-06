@@ -47,6 +47,12 @@ function deliveryActor(offer,user) {
   if(d.method==='coop')return user.role==='coop';
   return user.role==='logistics';
 }
+function deliveryPayment(offer) {
+  const produceTotal=Math.round(offer.quantity*offer.price*100)/100,quotedDeliveryFee=offer.delivery.fee||0,commissionRate=offer.delivery.commissionRate||0;
+  const standardCommission=Math.round(quotedDeliveryFee*commissionRate)/100,premiumBuyer=['pro','enterprise'].includes(offer.buyerSubscriptionTier),deliveryDiscount=premiumBuyer?standardCommission:0;
+  const deliveryFee=Math.round((quotedDeliveryFee-deliveryDiscount)*100)/100,agrikaizenCommission=Math.round((standardCommission-deliveryDiscount)*100)/100,providerReceives=Math.round((quotedDeliveryFee-standardCommission)*100)/100;
+  return {currency:'PHP',produceTotal,quotedDeliveryFee,deliveryFee,deliveryDiscount,buyerTotal:Math.round((produceTotal+deliveryFee)*100)/100,farmerReceives:produceTotal,providerReceives,agrikaizenCommission,commissionRate,status:'breakdown_ready'};
+}
 function visibleOffers(db,user) {
   if(user.role==='farmer')return db.offers.filter(o=>o.farmerId===user.id);
   if(user.role==='buyer')return db.offers.filter(o=>o.buyerId===user.id);
@@ -80,7 +86,7 @@ function mutate(db, user, b) {
     if (user.role !== 'buyer') fail('Only buyers can post requests.',403);
     validateCrop(b); if (!number(b.price)||!date(b.requiredDate)) fail('Enter a valid price and required date.');
     const buyerTypes=['trader','restaurant','retailer','processor','institution','cooperative','individual'],buyerType=buyerTypes.includes(b.buyerType)?b.buyerType:'individual';
-    const request = {id,buyerId:user.id,buyer:user.name,buyerType,deliveryRequirements:text(b.deliveryRequirements,200)?b.deliveryRequirements.trim():'',crop:b.crop,quantity:b.quantity,price:b.price,location:b.location.trim(),requiredDate:b.requiredDate,skippedBy:[],messages:[],createdAt};
+    const request = {id,buyerId:user.id,buyer:user.name,buyerType,buyerSubscriptionTier:subscriptionTier(user),deliveryRequirements:text(b.deliveryRequirements,200)?b.deliveryRequirements.trim():'',crop:b.crop,quantity:b.quantity,price:b.price,location:b.location.trim(),requiredDate:b.requiredDate,skippedBy:[],messages:[],createdAt};
     request.matchedFarmerIds=[...new Set(db.listings.filter(l=>matchingListings(db,request,l.farmerId).some(x=>x.id===l.id)).map(l=>l.farmerId))];
     db.requests.push(request); return request;
   }
@@ -100,18 +106,18 @@ function mutate(db, user, b) {
   }
   if (b.action === 'respondRequest') {
     if(user.role!=='farmer')fail('Only farmers can respond to buyer requests.',403);const request=db.requests.find(r=>r.id===b.requestId),listing=db.listings.find(l=>l.id===b.listingId&&l.farmerId===user.id);if(!request||!listing)fail('Matching request or listing not found.',404);if(!matchingListings(db,request,user.id).some(l=>l.id===listing.id))fail('This listing does not meet the buyer request.',409);if(!number(b.quantity)||b.quantity>request.quantity||b.quantity>availableQuantity(db,listing)||!number(b.price))fail('Enter a valid quantity and price.');if(db.offers.some(o=>o.requestId===request.id&&o.farmerId===user.id&&!['rejected'].includes(o.status)))fail('You already responded to this request.',409);
-    const offer={id,requestId:request.id,listingId:listing.id,farmerId:user.id,farmer:listing.farmer||user.name,buyerId:request.buyerId,buyer:request.buyer,location:listing.location,crop:listing.crop,variety:listing.variety,quantity:b.quantity,price:b.price,initiatedBy:'farmer',messages:[],status:'farmer_proposal',transactionStatus:'buyer_review',createdAt};db.offers.push(offer);return offer;
+    const offer={id,requestId:request.id,listingId:listing.id,farmerId:user.id,farmer:listing.farmer||user.name,buyerId:request.buyerId,buyer:request.buyer,buyerSubscriptionTier:request.buyerSubscriptionTier||null,location:listing.location,crop:listing.crop,variety:listing.variety,quantity:b.quantity,price:b.price,initiatedBy:'farmer',messages:[],status:'farmer_proposal',transactionStatus:'buyer_review',createdAt};db.offers.push(offer);return offer;
   }
   if (b.action === 'respondRequestOffer') {
     const offer=db.offers.find(o=>o.id===b.id&&o.requestId&&o.buyerId===user.id&&o.status==='farmer_proposal');if(!offer||user.role!=='buyer')fail('Farmer proposal not found.',404);if(!['accepted','rejected','countered'].includes(b.status))fail('Invalid response.');
-    if(b.status==='accepted')confirmTransaction(db,offer,createdAt);else if(b.status==='rejected'){offer.status='rejected';offer.transactionStatus='cancelled'}else{if(!number(b.price))fail('Enter a valid counter price.');const listing=db.listings.find(l=>l.id===offer.listingId);offer.price=b.price;offer.status='pending';offer.transactionStatus='offer_review';offer.counterFrom='buyer';Object.assign(offer,assessOffer(listing,b.price))}offer.updatedAt=createdAt;return offer;
+    if(b.status==='accepted'){offer.buyerSubscriptionTier=subscriptionTier(user);confirmTransaction(db,offer,createdAt)}else if(b.status==='rejected'){offer.status='rejected';offer.transactionStatus='cancelled'}else{if(!number(b.price))fail('Enter a valid counter price.');const listing=db.listings.find(l=>l.id===offer.listingId);offer.price=b.price;offer.buyerSubscriptionTier=subscriptionTier(user);offer.status='pending';offer.transactionStatus='offer_review';offer.counterFrom='buyer';Object.assign(offer,assessOffer(listing,b.price))}offer.updatedAt=createdAt;return offer;
   }
   if (b.action === 'offer') {
     if (user.role !== 'buyer') fail('Only buyers can make offers.',403);
     const listing = db.listings.find(l => l.id === b.listingId);
     if (!listing) fail('Listing not found.',404);
     if (listing.status!=='available'||!number(b.price) || !number(b.quantity) || b.quantity > availableQuantity(db,listing)) fail('Enter a valid price and available quantity.');
-    const offer = {id,listingId:listing.id,farmerId:listing.farmerId,farmer:listing.farmer,buyerId:user.id,buyer:user.name,location:user.location,crop:listing.crop,variety:listing.variety,quantity:b.quantity,price:b.price,messages:[],assistedFarmerId:listing.assistedFarmerId||null,status:'pending',transactionStatus:'offer_review',...assessOffer(listing,b.price),createdAt};
+    const offer = {id,listingId:listing.id,farmerId:listing.farmerId,farmer:listing.farmer,buyerId:user.id,buyer:user.name,buyerSubscriptionTier:subscriptionTier(user),location:user.location,crop:listing.crop,variety:listing.variety,quantity:b.quantity,price:b.price,messages:[],assistedFarmerId:listing.assistedFarmerId||null,status:'pending',transactionStatus:'offer_review',...assessOffer(listing,b.price),createdAt};
     db.offers.push(offer); return offer;
   }
   if (b.action === 'respond') {
@@ -130,7 +136,7 @@ function mutate(db, user, b) {
     const offer=db.offers.find(o=>o.id===b.id);
     if(!offer||user.role!=='buyer'||offer.buyerId!==user.id||offer.status!=='countered')fail('Counter-offer not found.',404);
     if(!['accepted','rejected'].includes(b.status))fail('Invalid response.');
-    if(b.status==='accepted'){offer.price=offer.counterPrice;confirmTransaction(db,offer,createdAt);}else{offer.status='rejected';offer.transactionStatus='cancelled';}
+    if(b.status==='accepted'){offer.price=offer.counterPrice;offer.buyerSubscriptionTier=subscriptionTier(user);confirmTransaction(db,offer,createdAt);}else{offer.status='rejected';offer.transactionStatus='cancelled';}
     offer.updatedAt=createdAt;return offer;
   }
   if (b.action === 'selectDelivery') {
@@ -156,8 +162,7 @@ function mutate(db, user, b) {
     }else{
       if(offer.delivery.status!=='in_progress')fail('Delivery is not in progress.',409);
       offer.delivery.status='completed';offer.delivery.completedAt=createdAt;offer.transactionStatus='completed';offer.completedAt=createdAt;
-      const produceTotal=Math.round(offer.quantity*offer.price*100)/100,deliveryFee=offer.delivery.fee||0,commission=Math.round(deliveryFee*offer.delivery.commissionRate)/100,providerPayout=Math.round((deliveryFee-commission)*100)/100;
-      offer.payment={currency:'PHP',produceTotal,deliveryFee,buyerTotal:Math.round((produceTotal+deliveryFee)*100)/100,farmerReceives:produceTotal,providerReceives:providerPayout,agrikaizenCommission:commission,commissionRate:offer.delivery.commissionRate,status:'breakdown_ready'};
+      offer.payment=deliveryPayment(offer);
     }
     offer.updatedAt=createdAt;return offer;
   }
@@ -170,7 +175,7 @@ function mutate(db, user, b) {
     for (const listing of selected) {
       if (remaining <= 0) break;
       const quantity=Math.min(remaining,availableQuantity(db,listing));
-      created.push({id:crypto.randomUUID(),listingId:listing.id,farmerId:listing.farmerId,buyerId:user.id,buyer:user.name,location:user.location,crop:listing.crop,variety:listing.variety,quantity,price:b.price,requiredDate:b.requiredDate,status:'pending',transactionStatus:'offer_review',...assessOffer(listing,b.price),bulkRequestId:id,createdAt});
+      created.push({id:crypto.randomUUID(),listingId:listing.id,farmerId:listing.farmerId,buyerId:user.id,buyer:user.name,buyerSubscriptionTier:subscriptionTier(user),location:user.location,crop:listing.crop,variety:listing.variety,quantity,price:b.price,requiredDate:b.requiredDate,status:'pending',transactionStatus:'offer_review',...assessOffer(listing,b.price),bulkRequestId:id,createdAt});
       remaining-=quantity;
     }
     if (remaining > 0) fail('Selected suppliers do not cover the requested quantity.');
