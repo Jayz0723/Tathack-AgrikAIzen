@@ -77,7 +77,7 @@ test('scripts render bilingually; cancelled drafts stay private; published listi
  for(const file of ['app.js','marketplace.js','community.js','intelligence.js','flow.js'])vm.runInContext(fs.readFileSync(require('node:path').join(__dirname,'../js',file),'utf8'),ctx);
  vm.runInContext(`for(const lang of ['en','fil','ceb','ilo','hil']){state.lang=lang;startDemo('farmer');for(const page of ['home','prices','submit','buyers','profile','offers','estimate','coops','plan','oversupply','community'])go(page);startDemo('buyer');for(const page of ['home','harvests','offers','premium','community'])go(page);startDemo('logistics');for(const page of ['home','logistics','profile','community'])go(page);}`,ctx);
  await vm.runInContext(`(async()=>{
-  state.user=null;state.mode='register';assert.ok(!auth().includes("roleChoice('admin')"));assert.ok(!auth().includes('>Admin<'));
+  state.user=null;state.mode='register';const registrationForm=auth();assert.ok(!registrationForm.includes("roleChoice('admin')"));assert.ok(!registrationForm.includes('>Admin<'));assert.ok(registrationForm.includes('id="accountLocation"'));assert.ok(!registrationForm.includes('id="location"'));
   startDemo('farmer');
   assert.equal(crops.length,15);assert.ok(cropOptions().includes('Talong'));assert.ok(!authHeader().includes('⌄'));assert.ok(header().includes('account-button'));assert.ok(home().includes('assets/crops/palay.jpg'));assert.ok(home().includes('assets/crops/mais.jpg'));assert.ok(home().includes('assets/crops/kamatis.jpg'));
   navigator={userAgent:'FBAN/Messenger'};window.navigator=navigator;window.isSecureContext=true;assert.ok(pushEnvironmentIssue().includes('Chrome'));assert.ok(pushErrorMessage(new Error('Registration failed - push service error')).includes('Chrome'));
