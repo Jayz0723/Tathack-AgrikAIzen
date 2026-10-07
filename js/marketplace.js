@@ -35,7 +35,7 @@ async function refreshMarket() {
     if(state.user?.id!==owner) return;
     state.market=data; state.marketOwner=owner; state.marketError='';
   } catch(e) { if(state.user?.id===owner) state.marketError=e.message; }
-  if(state.user?.id===owner && state.page===page && !document.querySelector('input:focus,select:focus')) render();
+  if(state.user?.id===owner && state.page===page && !shouldPreserveFormInput()) render();
 }
 async function marketWrite(body) {
   if(!state.user.demo) return api('/api/market',body);
