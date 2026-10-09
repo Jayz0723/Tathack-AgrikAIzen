@@ -78,8 +78,19 @@ function withOfficial(db,items,reporterId='psa-openstat') {
 }
 async function weather(location) {
   if(!location)return null;
-  const geo=await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(location)}&count=1&language=en&format=json`,{signal:AbortSignal.timeout(5000)});
-  if(!geo.ok)return null;const place=(await geo.json()).results?.[0];if(!place)return null;
+  const parts=String(location).split(',').map(x=>x.trim()).filter(Boolean);
+  const candidates=[location,...(parts.length>=3?[parts.at(-2),parts[0]]:[parts[0]]),...parts.slice(1)].filter((x,i,list)=>x&&list.indexOf(x)===i);
+  let place=null;
+  for(const candidate of candidates){
+    try{
+      const geo=await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(candidate)}&count=10&language=en&format=json&countryCode=PH`,{signal:AbortSignal.timeout(5000)});
+      if(!geo.ok)continue;
+      const results=(await geo.json()).results||[];
+      place=results.find(x=>x.country_code==='PH')||results[0]||null;
+      if(place)break;
+    }catch(error){console.error(`weather location lookup failed for ${candidate}`,error)}
+  }
+  if(!place)return null;
   const forecast=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${place.latitude}&longitude=${place.longitude}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&forecast_days=7&timezone=Asia%2FManila`,{signal:AbortSignal.timeout(5000)});
   if(!forecast.ok)return null;const daily=(await forecast.json()).daily;if(!daily)return null;
   return {place:`${place.name}${place.admin1?`, ${place.admin1}`:''}`,averageHigh:round(daily.temperature_2m_max.reduce((a,b)=>a+b,0)/daily.temperature_2m_max.length),rainfall:round(daily.precipitation_sum.reduce((a,b)=>a+b,0)),days:daily.time.length,source:'Open-Meteo'};
