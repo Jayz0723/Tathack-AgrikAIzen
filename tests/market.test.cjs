@@ -67,6 +67,7 @@ test('market ownership, publishing, offers, validation and premium enforcement',
  const proposal=await call(farmer,{action:'respondRequest',requestId:buyerRequest.result.id,listingId,quantity:50,price:29});assert.equal(proposal.result.transactionStatus,'buyer_review');
  assert.equal((await call(buyer,{action:'respondRequestOffer',id:proposal.result.id,status:'countered',price:27})).result.status,'pending');
  assert.equal((await call(farmer,{action:'respond',id:proposal.result.id,status:'accepted'})).result.transactionStatus,'confirmed');
+ const exactListing=await call(farmer,{...draft,draftId:'draft-exact-quantity',variety:'Exact quantity test',quantity:50});const exactOffer=await call(buyer,{action:'offer',listingId:exactListing.result.id,quantity:50,price:28});const exactAccepted=await call(farmer,{action:'respond',id:exactOffer.result.id,status:'accepted'});assert.equal(exactAccepted.status,200);const exactAfter=(await call(farmer,{action:'read'})).listings.find(l=>l.id===exactListing.result.id);assert.equal(exactAfter.availableQuantity,0);assert.equal(exactAfter.status,'sold');
  const buyerRead=await call(buyer,{action:'read'});assert.equal(buyerRead.alerts.length,1);assert.equal(buyerRead.recurring.length,1);assert.equal(buyerRead.suppliers.length,0);
  const concurrent=await Promise.all([1,2].map(()=>call(buyer,{action:'request',crop:'mais',quantity:50,price:20,location:'Bustos',requiredDate:'2026-10-30'})));
  assert.deepEqual(concurrent.map(r=>r.status).sort(),[200,409]);

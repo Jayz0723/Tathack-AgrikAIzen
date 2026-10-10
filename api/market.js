@@ -21,8 +21,8 @@ function assessOffer(listing, price) {
   const fairMinimum=number(listing.fairMinimum) ? listing.fairMinimum : Math.max(1,Math.round(listing.price*.9*100)/100);
   return {assessment:price>=fairMinimum?'fair':'low',fairMinimum,assessmentSource:number(listing.fairMinimum)?'ai-estimate':'listing-reference'};
 }
-function availableQuantity(db, listing) {
-  const reserved=db.offers.filter(o=>o.listingId===listing.id&&o.status==='accepted'&&o.transactionStatus!=='cancelled').reduce((sum,o)=>sum+o.quantity,0);
+function availableQuantity(db, listing, excludeOfferId=null) {
+  const reserved=db.offers.filter(o=>o.id!==excludeOfferId&&o.listingId===listing.id&&o.status==='accepted'&&o.transactionStatus!=='cancelled').reduce((sum,o)=>sum+o.quantity,0);
   return Math.max(0,Math.round((listing.quantity-reserved)*100)/100);
 }
 function matchingListings(db, request, farmerId) {
@@ -36,7 +36,7 @@ function requestForUser(db,request,user){
 }
 function confirmTransaction(db, offer, now) {
   const listing=db.listings.find(l=>l.id===offer.listingId);
-  if(!listing||availableQuantity(db,listing)<offer.quantity)fail('This harvest no longer has enough available quantity.',409);
+  if(!listing||availableQuantity(db,listing,offer.id)<offer.quantity)fail('This harvest no longer has enough available quantity.',409);
   offer.status='accepted'; offer.transactionStatus='confirmed'; offer.confirmedAt=now;
   listing.availableQuantity=availableQuantity(db,listing);
   if(listing.availableQuantity===0)listing.status='sold';
