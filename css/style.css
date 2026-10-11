@@ -127,7 +127,8 @@ button:not(:disabled):active,.btn:not(:disabled):active,.card[role="button"]:act
 @keyframes chart-grow{from{opacity:.35;transform:scaleY(.08)}to{opacity:1;transform:scaleY(1)}}
 @keyframes reaction-pop{0%{transform:scale(.8)}55%{transform:scale(1.14)}100%{transform:none}}
 .splash img{animation:logo-sprout 620ms var(--motion-spring) both,logo-glow 650ms ease-out both}
-.splash h1{animation:content-reveal 340ms 110ms var(--motion-spring) both}
+@keyframes brand-letter-bounce{0%{opacity:0;transform:translateY(.4em)}45%{opacity:1;transform:translateY(-.2em)}70%{opacity:1;transform:translateY(.07em)}85%{opacity:1;transform:translateY(-.03em)}100%{opacity:1;transform:none}}
+.splash-letter{display:inline-block;animation:brand-letter-bounce 360ms var(--letter-delay,0ms) ease-out both}
 .splash p{animation:content-reveal 340ms 180ms var(--motion-spring) backwards}
 .brand img{animation:logo-sprout 560ms var(--motion-spring) both}
 .logo-mini{animation:logo-sprout 480ms var(--motion-spring) both}
