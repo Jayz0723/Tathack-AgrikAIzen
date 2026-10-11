@@ -81,6 +81,7 @@ html{scroll-behavior:smooth}
 @keyframes motion-page-in{from{opacity:0;transform:translateY(14px) scale(.992)}to{opacity:1;transform:none}}
 @keyframes motion-page-out{to{opacity:0;transform:translateY(-6px) scale(.996)}}
 @keyframes motion-rise{from{opacity:0;transform:translateY(16px) scale(.985)}to{opacity:1;transform:none}}
+@keyframes motion-nav-rise{from{opacity:0;transform:translateX(-50%) translateY(16px) scale(.985)}to{opacity:1;transform:translateX(-50%)}}
 @keyframes motion-pop{from{opacity:0;transform:translateY(-8px) scale(.94)}to{opacity:1;transform:none}}
 @keyframes motion-toast{0%{opacity:0;transform:translateX(-50%) translateY(18px) scale(.94)}70%{opacity:1;transform:translateX(-50%) translateY(-3px) scale(1.01)}100%{opacity:1;transform:translateX(-50%) translateY(0) scale(1)}}
 .page{animation:motion-page-in var(--motion-page) var(--motion-spring) both}
@@ -101,7 +102,7 @@ button,.btn,.card,.price,.service,.role,.tabs button,.reaction-btn,.avatar-shell
 button:not(:disabled):active,.btn:not(:disabled):active,.card[role="button"]:active,.profile-cover:active,.avatar-shell:active{transform:scale(.965)}
 @media (hover:hover){.service:hover,.price:hover,.role:hover,.tier-card:hover{transform:translateY(-3px);box-shadow:0 15px 30px #173b1828}.service:hover i,.price:hover img{transform:scale(1.06)}.nav button:hover span{transform:translateY(-2px)}}
 .service i,.price img,.nav button span,.nav button b,.process-chevron{transition:transform 220ms var(--motion-spring),color 220ms ease}
-.nav{animation:motion-rise 460ms 80ms var(--motion-spring) both}
+.nav{animation:motion-nav-rise 460ms 80ms var(--motion-spring) both}
 .nav button{position:relative;overflow:hidden;transition:background-color 260ms ease,color 220ms ease,transform var(--motion-quick) ease}
 .nav button.active span{transform:translateY(-2px) scale(1.08)}
 .nav button.active b{transform:translateY(1px)}
@@ -109,4 +110,5 @@ button:not(:disabled):active,.btn:not(:disabled):active,.card[role="button"]:act
 .field input:focus,.field select:focus,.field textarea:focus,.input-row input:focus{box-shadow:0 0 0 5px #8dbd3c1f;transform:translateY(-1px)}
 .process-card[open] .process-details{animation:motion-rise 260ms var(--motion-spring) both}
 #toast.show{animation:motion-toast 320ms var(--motion-spring) both}
+@media(max-width:430px){.price-list-item{grid-template-columns:68px minmax(0,1fr) 28px;grid-template-rows:auto auto;column-gap:13px;row-gap:5px;min-height:132px}.price-list-photo{grid-column:1;grid-row:1/3}.price-list-copy{grid-column:2;grid-row:1;min-width:0}.price-list-copy b,.price-list-copy small{overflow-wrap:normal;word-break:normal}.price-list-item>strong{grid-column:2;grid-row:2;margin:0;text-align:left;white-space:normal;line-height:1.2}.price-list-item>strong small{display:inline;margin-left:4px}.price-card-arrow{grid-column:3;grid-row:1/3;align-self:center}}
 @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{animation-duration:.01ms!important;animation-delay:0ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}::view-transition-old(root),::view-transition-new(root){animation:none!important}}

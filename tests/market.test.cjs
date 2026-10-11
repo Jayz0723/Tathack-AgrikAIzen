@@ -117,7 +117,10 @@ test('motion system is smooth and respects reduced-motion accessibility',()=>{
  assert.match(css,/::view-transition-new\(root\)/);
  assert.match(css,/@media \(prefers-reduced-motion:reduce\)/);
  assert.match(css,/\.language-menu\{[^}]*animation:motion-pop/);
+ assert.match(css,/@keyframes motion-nav-rise\{[^}]*translateX\(-50%\)/);
+ assert.match(css,/\.nav\{animation:motion-nav-rise/);
  assert.match(css,/\.nav button\.active span\{[^}]*transform:/);
+ assert.match(css,/@media\(max-width:430px\)\{\.price-list-item\{grid-template-columns:68px minmax\(0,1fr\) 28px/);
  assert.match(app,/function changeView\(update\)/);
  assert.match(app,/behavior:reducedMotion\(\)\?'auto':'smooth'/);
 });
