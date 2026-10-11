@@ -117,4 +117,26 @@ button:not(:disabled):active,.btn:not(:disabled):active,.card[role="button"]:act
 .process-card[open] .process-details{animation:motion-rise 260ms var(--motion-spring) both}
 #toast.show{animation:motion-toast 320ms var(--motion-spring) both}
 @media(max-width:430px){.price-list-item{grid-template-columns:68px minmax(0,1fr) 28px;grid-template-rows:auto auto;column-gap:13px;row-gap:5px;min-height:132px}.price-list-photo{grid-column:1;grid-row:1/3}.price-list-copy{grid-column:2;grid-row:1;min-width:0}.price-list-copy b,.price-list-copy small{overflow-wrap:normal;word-break:normal}.price-list-item>strong{grid-column:2;grid-row:2;margin:0;text-align:left;white-space:normal;line-height:1.2}.price-list-item>strong small{display:inline;margin-left:4px}.price-card-arrow{grid-column:3;grid-row:1/3;align-self:center}}
+/* Brand and result motion: transforms and opacity preserve the existing layout. */
+@keyframes logo-sprout{0%{opacity:0;transform:translateY(14px) scale(.72) rotate(-9deg)}60%{opacity:1;transform:translateY(-3px) scale(1.045) rotate(2deg)}82%{transform:translateY(1px) scale(.985) rotate(-1deg)}100%{opacity:1;transform:none}}
+@keyframes logo-glow{0%{box-shadow:0 14px 30px #0004,0 0 0 0 #d6f1a655}65%{box-shadow:0 14px 30px #0004,0 0 0 16px #d6f1a600}100%{box-shadow:0 14px 30px #0004,0 0 0 0 #d6f1a600}}
+@keyframes content-reveal{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+@keyframes value-reveal{from{opacity:0;transform:translateY(6px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes meter-fill{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes chart-grow{from{opacity:.35;transform:scaleY(.08)}to{opacity:1;transform:scaleY(1)}}
+@keyframes reaction-pop{0%{transform:scale(.8)}55%{transform:scale(1.14)}100%{transform:none}}
+.splash img{animation:logo-sprout 620ms var(--motion-spring) both,logo-glow 650ms ease-out both}
+.splash h1{animation:content-reveal 340ms 110ms var(--motion-spring) both}
+.splash p{animation:content-reveal 340ms 180ms var(--motion-spring) backwards}
+.brand img{animation:logo-sprout 560ms var(--motion-spring) both}
+.logo-mini{animation:logo-sprout 480ms var(--motion-spring) both}
+.estimate .range,.estimate-total strong,.intel-metric strong,.weather-metrics strong{animation:value-reveal 450ms 90ms var(--motion-spring) backwards}
+.meter i{transform-origin:left center;animation:meter-fill 700ms 100ms var(--motion-spring) backwards}
+.trend-column>span{transform-origin:bottom center;animation:chart-grow 580ms var(--motion-spring) backwards}
+.trend-column:nth-child(2)>span{animation-delay:45ms}.trend-column:nth-child(3)>span{animation-delay:90ms}.trend-column:nth-child(4)>span{animation-delay:135ms}.trend-column:nth-child(5)>span{animation-delay:180ms}.trend-column:nth-child(6)>span{animation-delay:225ms}
+.profile-photo-controls,.request-message-form,.delete-confirm,.plan-result,.comment{animation:content-reveal 280ms var(--motion-spring) backwards}
+.reaction-btn.active span{animation:reaction-pop 320ms var(--motion-spring) backwards}
+.btn .ui-icon,.circle .ui-icon,.back .ui-icon{transition:transform 180ms var(--motion-spring)}
+.btn:not(:disabled):active .ui-icon,.circle:active .ui-icon{transform:scale(.88)}
+@media(hover:hover){.account-button:hover .ui-icon{transform:translateY(-2px)}.back:hover .ui-icon{transform:translateX(-3px)}.btn:not(:disabled):hover .ui-icon{transform:translateY(-2px)}}
 @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{animation-duration:.01ms!important;animation-delay:0ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}::view-transition-old(root),::view-transition-new(root){animation:none!important}}
