@@ -75,13 +75,13 @@ html{font-size:18px}body{font-family:Arial,"Segoe UI",sans-serif;line-height:1.5
 
 /* Smooth, accessible motion inspired by modern mobile delivery apps */
 .insight-hero{background:linear-gradient(90deg,rgba(15,43,19,.88) 0%,rgba(15,43,19,.74) 57%,rgba(15,43,19,.22) 100%),url('../assets/harvest-insights-v2.jpg') center/cover}
-:root{--motion-spring:cubic-bezier(.22,1,.36,1);--motion-quick:160ms;--motion-page:420ms}
+:root{--motion-spring:cubic-bezier(.22,1,.36,1);--motion-quick:120ms;--motion-page:280ms}
 html{scroll-behavior:smooth}
 ::view-transition-old(root){animation:motion-page-out 180ms ease both}
 ::view-transition-new(root){animation:motion-page-in var(--motion-page) var(--motion-spring) both}
-@keyframes motion-page-in{from{opacity:0;transform:translateY(14px) scale(.992)}to{opacity:1;transform:none}}
-@keyframes motion-page-out{to{opacity:0;transform:translateY(-6px) scale(.996)}}
-@keyframes motion-rise{from{opacity:0;transform:translateY(16px) scale(.985)}to{opacity:1;transform:none}}
+@keyframes motion-page-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@keyframes motion-page-out{to{opacity:0}}
+@keyframes motion-rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 @keyframes motion-nav-rise{from{opacity:0;transform:translateX(-50%) translateY(16px) scale(.985)}to{opacity:1;transform:translateX(-50%)}}
 @keyframes motion-pop{from{opacity:0;transform:translateY(-8px) scale(.94)}to{opacity:1;transform:none}}
 @keyframes motion-toast{0%{opacity:0;transform:translateX(-50%) translateY(18px) scale(.94)}70%{opacity:1;transform:translateX(-50%) translateY(-3px) scale(1.01)}100%{opacity:1;transform:translateX(-50%) translateY(0) scale(1)}}
@@ -119,15 +119,15 @@ button:not(:disabled):active,.btn:not(:disabled):active,.card[role="button"]:act
 #toast.show{animation:motion-toast 320ms var(--motion-spring) both}
 @media(max-width:430px){.price-list-item{grid-template-columns:68px minmax(0,1fr) 28px;grid-template-rows:auto auto;column-gap:13px;row-gap:5px;min-height:132px}.price-list-photo{grid-column:1;grid-row:1/3}.price-list-copy{grid-column:2;grid-row:1;min-width:0}.price-list-copy b,.price-list-copy small{overflow-wrap:normal;word-break:normal}.price-list-item>strong{grid-column:2;grid-row:2;margin:0;text-align:left;white-space:normal;line-height:1.2}.price-list-item>strong small{display:inline;margin-left:4px}.price-card-arrow{grid-column:3;grid-row:1/3;align-self:center}}
 /* Brand and result motion: transforms and opacity preserve the existing layout. */
-@keyframes logo-sprout{0%{opacity:0;transform:translateY(14px) scale(.72) rotate(-9deg)}60%{opacity:1;transform:translateY(-3px) scale(1.045) rotate(2deg)}82%{transform:translateY(1px) scale(.985) rotate(-1deg)}100%{opacity:1;transform:none}}
+@keyframes logo-sprout{0%{opacity:0;transform:translateY(6px) scale(.94)}100%{opacity:1;transform:none}}
 @keyframes logo-glow{0%{box-shadow:0 14px 30px #0004,0 0 0 0 #d6f1a655}65%{box-shadow:0 14px 30px #0004,0 0 0 16px #d6f1a600}100%{box-shadow:0 14px 30px #0004,0 0 0 0 #d6f1a600}}
 @keyframes content-reveal{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
 @keyframes value-reveal{from{opacity:0;transform:translateY(6px) scale(.97)}to{opacity:1;transform:none}}
 @keyframes meter-fill{from{transform:scaleX(0)}to{transform:scaleX(1)}}
 @keyframes chart-grow{from{opacity:.35;transform:scaleY(.08)}to{opacity:1;transform:scaleY(1)}}
 @keyframes reaction-pop{0%{transform:scale(.8)}55%{transform:scale(1.14)}100%{transform:none}}
-.splash img{animation:logo-sprout 620ms var(--motion-spring) both,logo-glow 650ms ease-out both}
-@keyframes brand-letter-bounce{0%{opacity:0;transform:translateY(.4em)}45%{opacity:1;transform:translateY(-.2em)}70%{opacity:1;transform:translateY(.07em)}85%{opacity:1;transform:translateY(-.03em)}100%{opacity:1;transform:none}}
+.splash img{animation:logo-sprout 520ms var(--motion-spring) backwards}
+@keyframes brand-letter-bounce{0%{opacity:0;transform:translateY(.15em)}60%{opacity:1;transform:translateY(-.04em)}100%{opacity:1;transform:none}}
 .splash-letter{display:inline-block;animation:brand-letter-bounce 360ms var(--letter-delay,0ms) ease-out both}
 .splash p{animation:content-reveal 340ms 180ms var(--motion-spring) backwards}
 .brand img{animation:logo-sprout 560ms var(--motion-spring) both}
@@ -141,4 +141,13 @@ button:not(:disabled):active,.btn:not(:disabled):active,.card[role="button"]:act
 .btn .ui-icon,.circle .ui-icon,.back .ui-icon{transition:transform 180ms var(--motion-spring)}
 .btn:not(:disabled):active .ui-icon,.circle:active .ui-icon{transform:scale(.88)}
 @media(hover:hover){.account-button:hover .ui-icon{transform:translateY(-2px)}.back:hover .ui-icon{transform:translateX(-3px)}.btn:not(:disabled):hover .ui-icon{transform:translateY(-2px)}}
-@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{animation-duration:.01ms!important;animation-delay:0ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}::view-transition-old(root),::view-transition-new(root){animation:none!important}}
+/* Release entrance transforms so controls still respond after they appear. */
+.page,.auth .brand,.auth-card,.language-menu,.page>.card,.page>.insight-hero,.page>.stat-grid,.page>.service-grid,.page>.price-list,.page>.community-feed,.page>.tier-grid,.page>.process-card,.service-grid>.service,.market-cards>.price,.price-list>.price-list-item,.tier-grid>.tier-card,.community-feed>.community-post{animation-fill-mode:backwards;animation-duration:280ms}
+.page>.card,.page>.process-card,.service-grid>*,.market-cards>*,.price-list>*,.tier-grid>*,.community-feed>*{animation-delay:0ms}
+.motion-nav-stable .nav{animation:none;transform:translateX(-50%)}
+.motion-refresh .page,.motion-refresh .auth .brand,.motion-refresh .auth-card,.motion-refresh .logo-mini,.motion-refresh .brand img,.motion-refresh .page>.card,.motion-refresh .page>.insight-hero,.motion-refresh .page>.stat-grid,.motion-refresh .page>.service-grid,.motion-refresh .page>.price-list,.motion-refresh .page>.community-feed,.motion-refresh .page>.tier-grid,.motion-refresh .page>.process-card,.motion-refresh .service-grid>.service,.motion-refresh .market-cards>.price,.motion-refresh .price-list>.price-list-item,.motion-refresh .tier-grid>.tier-card,.motion-refresh .community-feed>.community-post,.motion-refresh .estimate .range,.motion-refresh .estimate-total strong,.motion-refresh .intel-metric strong,.motion-refresh .weather-metrics strong,.motion-refresh .meter i,.motion-refresh .trend-column>span,.motion-refresh .comment,.motion-refresh .reaction-btn.active span{animation:none}
+button:not(:disabled):active,.btn:not(:disabled):active,.card[role="button"]:active,.profile-cover:active,.avatar-shell:active{transform:scale(.98)}
+.service:not(:disabled):active,.price:not(:disabled):active,.price-list-item:not(:disabled):active,.role:not(:disabled):active{transform:scale(.985)}
+.btn:focus-visible,.nav button:focus-visible,.service:focus-visible,.price-list-item:focus-visible{outline:3px solid var(--green);outline-offset:3px}
+@media(hover:hover){.service:hover,.price:hover,.role:hover,.tier-card:hover{transform:translateY(-2px);box-shadow:0 10px 22px #173b181c}.service:hover i,.price:hover img{transform:scale(1.03)}.service:not(:disabled):active,.price:not(:disabled):active,.role:not(:disabled):active{transform:scale(.985)}}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{animation-duration:.01ms!important;animation-delay:0ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}button:not(:disabled):active,.btn:not(:disabled):active,.service:not(:disabled):active,.price:not(:disabled):active,.price-list-item:not(:disabled):active,.role:not(:disabled):active,.card[role="button"]:active,.profile-cover:active,.avatar-shell:active,.field input:focus,.field select:focus,.field textarea:focus,.input-row input:focus{transform:none}::view-transition-old(root),::view-transition-new(root){animation:none!important}}
