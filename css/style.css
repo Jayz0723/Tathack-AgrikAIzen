@@ -106,6 +106,12 @@ button:not(:disabled):active,.btn:not(:disabled):active,.card[role="button"]:act
 .nav button{position:relative;overflow:hidden;transition:background-color 260ms ease,color 220ms ease,transform var(--motion-quick) ease}
 .nav button.active span{transform:translateY(-2px) scale(1.08)}
 .nav button.active b{transform:translateY(1px)}
+.nav{touch-action:pan-y;user-select:none;-webkit-user-select:none;isolation:isolate}
+.nav::before{content:"";position:absolute;left:4px;top:8px;bottom:8px;width:calc((100% - 8px) / var(--nav-count,5));border-radius:15px;background:var(--forest);transform:translateX(calc(var(--nav-index,0) * 100%));transition:transform 240ms var(--motion-spring),opacity 160ms ease;opacity:0;pointer-events:none;z-index:-1}
+.nav.has-selection::before{opacity:1}
+.nav button.active{background:transparent}
+.nav.swiping::before{transition:transform 100ms ease}
+.nav.swiping button:active{transform:none}
 .field input,.field select,.field textarea,.input-row input{transition:border-color 180ms ease,box-shadow 180ms ease,background-color 180ms ease,transform 180ms ease}
 .field input:focus,.field select:focus,.field textarea:focus,.input-row input:focus{box-shadow:0 0 0 5px #8dbd3c1f;transform:translateY(-1px)}
 .process-card[open] .process-details{animation:motion-rise 260ms var(--motion-spring) both}
