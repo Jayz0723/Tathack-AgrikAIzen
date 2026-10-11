@@ -109,3 +109,15 @@ test('scripts render bilingually; cancelled drafts stay private; published listi
  })()`,ctx);
 
 });
+
+test('motion system is smooth and respects reduced-motion accessibility',()=>{
+ const fs=require('node:fs'),path=require('node:path');
+ const css=fs.readFileSync(path.join(__dirname,'../css/style.css'),'utf8');
+ const app=fs.readFileSync(path.join(__dirname,'../js/app.js'),'utf8');
+ assert.match(css,/::view-transition-new\(root\)/);
+ assert.match(css,/@media \(prefers-reduced-motion:reduce\)/);
+ assert.match(css,/\.language-menu\{[^}]*animation:motion-pop/);
+ assert.match(css,/\.nav button\.active span\{[^}]*transform:/);
+ assert.match(app,/function changeView\(update\)/);
+ assert.match(app,/behavior:reducedMotion\(\)\?'auto':'smooth'/);
+});

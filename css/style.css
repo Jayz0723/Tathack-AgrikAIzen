@@ -72,3 +72,41 @@ html{font-size:18px}body{font-family:Arial,"Segoe UI",sans-serif;line-height:1.5
 /* Free buyer sponsorship; paid buyer plans remain ad-free */
 .sponsored-placement{border:2px dashed #c9a53b;background:linear-gradient(145deg,#fffbea,#fff)}
 .sponsored-placement h3{margin:8px 0 6px}.sponsored-placement p{margin-bottom:8px;color:var(--muted);font-size:.92rem;line-height:1.5}
+
+/* Smooth, accessible motion inspired by modern mobile delivery apps */
+:root{--motion-spring:cubic-bezier(.22,1,.36,1);--motion-quick:160ms;--motion-page:420ms}
+html{scroll-behavior:smooth}
+::view-transition-old(root){animation:motion-page-out 180ms ease both}
+::view-transition-new(root){animation:motion-page-in var(--motion-page) var(--motion-spring) both}
+@keyframes motion-page-in{from{opacity:0;transform:translateY(14px) scale(.992)}to{opacity:1;transform:none}}
+@keyframes motion-page-out{to{opacity:0;transform:translateY(-6px) scale(.996)}}
+@keyframes motion-rise{from{opacity:0;transform:translateY(16px) scale(.985)}to{opacity:1;transform:none}}
+@keyframes motion-pop{from{opacity:0;transform:translateY(-8px) scale(.94)}to{opacity:1;transform:none}}
+@keyframes motion-toast{0%{opacity:0;transform:translateX(-50%) translateY(18px) scale(.94)}70%{opacity:1;transform:translateX(-50%) translateY(-3px) scale(1.01)}100%{opacity:1;transform:translateX(-50%) translateY(0) scale(1)}}
+.page{animation:motion-page-in var(--motion-page) var(--motion-spring) both}
+.auth .brand{animation:motion-rise 520ms var(--motion-spring) both}
+.auth-card{animation:motion-rise 540ms 80ms var(--motion-spring) both}
+.language-menu{transform-origin:top right;animation:motion-pop 220ms var(--motion-spring) both}
+.page>.card,.page>.insight-hero,.page>.stat-grid,.page>.service-grid,.page>.price-list,.page>.community-feed,.page>.tier-grid,.page>.process-card{animation:motion-rise 440ms var(--motion-spring) both}
+.page>.card:nth-of-type(2),.page>.process-card:nth-of-type(2){animation-delay:45ms}
+.page>.card:nth-of-type(3),.page>.process-card:nth-of-type(3){animation-delay:90ms}
+.page>.card:nth-of-type(4),.page>.process-card:nth-of-type(4){animation-delay:135ms}
+.service-grid>.service,.market-cards>.price,.price-list>.price-list-item,.tier-grid>.tier-card,.community-feed>.community-post{animation:motion-rise 430ms var(--motion-spring) both}
+.service-grid>:nth-child(2),.market-cards>:nth-child(2),.price-list>:nth-child(2),.tier-grid>:nth-child(2),.community-feed>:nth-child(2){animation-delay:55ms}
+.service-grid>:nth-child(3),.market-cards>:nth-child(3),.price-list>:nth-child(3),.community-feed>:nth-child(3){animation-delay:100ms}
+.service-grid>:nth-child(4),.price-list>:nth-child(4),.community-feed>:nth-child(4){animation-delay:145ms}
+.service-grid>:nth-child(5),.price-list>:nth-child(5){animation-delay:190ms}
+.service-grid>:nth-child(6),.price-list>:nth-child(6){animation-delay:235ms}
+button,.btn,.card,.price,.service,.role,.tabs button,.reaction-btn,.avatar-shell,.profile-cover{transition:transform var(--motion-quick) ease,box-shadow 220ms ease,background-color 220ms ease,border-color 220ms ease,color 220ms ease,opacity 220ms ease}
+button:not(:disabled):active,.btn:not(:disabled):active,.card[role="button"]:active,.profile-cover:active,.avatar-shell:active{transform:scale(.965)}
+@media (hover:hover){.service:hover,.price:hover,.role:hover,.tier-card:hover{transform:translateY(-3px);box-shadow:0 15px 30px #173b1828}.service:hover i,.price:hover img{transform:scale(1.06)}.nav button:hover span{transform:translateY(-2px)}}
+.service i,.price img,.nav button span,.nav button b,.process-chevron{transition:transform 220ms var(--motion-spring),color 220ms ease}
+.nav{animation:motion-rise 460ms 80ms var(--motion-spring) both}
+.nav button{position:relative;overflow:hidden;transition:background-color 260ms ease,color 220ms ease,transform var(--motion-quick) ease}
+.nav button.active span{transform:translateY(-2px) scale(1.08)}
+.nav button.active b{transform:translateY(1px)}
+.field input,.field select,.field textarea,.input-row input{transition:border-color 180ms ease,box-shadow 180ms ease,background-color 180ms ease,transform 180ms ease}
+.field input:focus,.field select:focus,.field textarea:focus,.input-row input:focus{box-shadow:0 0 0 5px #8dbd3c1f;transform:translateY(-1px)}
+.process-card[open] .process-details{animation:motion-rise 260ms var(--motion-spring) both}
+#toast.show{animation:motion-toast 320ms var(--motion-spring) both}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{animation-duration:.01ms!important;animation-delay:0ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}::view-transition-old(root),::view-transition-new(root){animation:none!important}}
