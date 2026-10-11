@@ -74,6 +74,7 @@ html{font-size:18px}body{font-family:Arial,"Segoe UI",sans-serif;line-height:1.5
 .sponsored-placement h3{margin:8px 0 6px}.sponsored-placement p{margin-bottom:8px;color:var(--muted);font-size:.92rem;line-height:1.5}
 
 /* Smooth, accessible motion inspired by modern mobile delivery apps */
+.insight-hero{background:linear-gradient(90deg,rgba(15,43,19,.88) 0%,rgba(15,43,19,.74) 57%,rgba(15,43,19,.22) 100%),url('../assets/harvest-insights-v2.jpg') center/cover}
 :root{--motion-spring:cubic-bezier(.22,1,.36,1);--motion-quick:160ms;--motion-page:420ms}
 html{scroll-behavior:smooth}
 ::view-transition-old(root){animation:motion-page-out 180ms ease both}
