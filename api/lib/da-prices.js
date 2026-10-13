@@ -75,7 +75,10 @@ async function loadReport(now){
   if(cache.report?.url===report.url){cache.expiresAt=Date.now()+60*60*1000;return cache.report}
   const pdf=await response(report.url),data=new Uint8Array(await pdf.arrayBuffer());
   if(data.length>4*1024*1024||Buffer.from(data.slice(0,5)).toString()!=='%PDF-')throw new Error('DA source did not return a valid PDF.');
-  const {PDFParse}=require('pdf-parse');const parser=new PDFParse({data});
+  // Explicit worker import includes the canvas adapter in serverless tracing;
+  // the embedded worker avoids relying on a runtime-only file path in Vercel.
+  const {CanvasFactory,getData}=require('pdf-parse/worker');
+  const {PDFParse}=require('pdf-parse');PDFParse.setWorker(getData());const parser=new PDFParse({data,CanvasFactory});
   try{const result=await parser.getText();cache.report={...report,records:parseReport(result.text,report),retrievedAt:new Date().toISOString()};cache.expiresAt=Date.now()+60*60*1000;return cache.report}finally{await parser.destroy()}
 }
 async function fetchDAPrices(crop,_location,{now=new Date(),force=false}={}){
