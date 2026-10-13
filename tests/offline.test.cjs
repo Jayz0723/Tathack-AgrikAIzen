@@ -1,7 +1,7 @@
 const test=require('node:test'),assert=require('node:assert/strict'),vm=require('node:vm'),fs=require('node:fs'),path=require('node:path');
 function client(){const data=new Map(),state={user:{id:'offline-a',name:'Farmer A',role:'farmer',location:'Laguna'},token:'test-token',page:'home',recentActivity:[]};const storage={get length(){return data.size},key:i=>[...data.keys()][i]||null,getItem:k=>data.get(k)||null,setItem:(k,v)=>data.set(k,v),removeItem:k=>data.delete(k)};
  const blank=()=>({listings:[],offers:[],requests:[],drafts:[],alerts:[],suppliers:[],recurring:[],priceReports:[],assistedFarmers:[],premium:false});
- const ctx=vm.createContext({state,localStorage:storage,readStoredJson:(k,f=null)=>{try{return JSON.parse(storage.getItem(k)||'null')??f}catch{return f}},marketEmpty:blank,crops:[{id:'palay',base:27},{id:'kamatis',base:52}],t:(_fil,en)=>en,console,structuredClone,crypto:require('node:crypto').webcrypto,navigator:{onLine:false},document:{getElementById:()=>null},window:{},Date,JSON,Map,Set,URL,Response,AbortSignal,setTimeout(){},toast(){},render(){},shouldPreserveFormInput:()=>true,updateRecentActivity(){},fetch:async()=>{throw Error('No connection')}});
+ const ctx=vm.createContext({state,localStorage:storage,readStoredJson:(k,f=null)=>{try{return JSON.parse(storage.getItem(k)||'null')??f}catch{return f}},marketEmpty:blank,crops:[{id:'palay',base:27},{id:'kamatis',base:52}],t:(_fil,en)=>en,console,structuredClone,crypto:require('node:crypto').webcrypto,TextEncoder,navigator:{onLine:false},document:{getElementById:()=>null},window:{},Date,JSON,Map,Set,URL,Response,AbortSignal,setTimeout(){},toast(){},render(){},shouldPreserveFormInput:()=>true,updateRecentActivity(){},fetch:async()=>{throw Error('No connection')}});
  vm.runInContext(fs.readFileSync(path.join(__dirname,'../js/offline.js'),'utf8'),ctx);ctx.api=async(p,b)=>{const r=await ctx.offlineTransport(p,b,{method:'POST',body:JSON.stringify(b)});return r.json()};return ctx;
 }
 test('offline guidance uses saved farmgate data, excludes DA retail, and computes quantity totals',async()=>{
@@ -24,6 +24,32 @@ test('offline posts, replies, and reactions persist without pretending they were
  const c=client(),post=await c.api('/api/community',{action:'createPost',text:'Offline post',category:'general'});
  await c.api('/api/community',{action:'addComment',postId:post.result.id,text:'Offline reply'});await c.api('/api/community',{action:'toggleReaction',postId:post.result.id,reaction:'helpful'});
  const data=c.offlineCommunity();assert.equal(data.posts[0].pendingSync,true);assert.equal(data.posts[0].comments[0].pendingSync,true);assert.equal(data.posts[0].reactions.helpful,1);assert.equal(c.offlineQueue().length,3);
+});
+test('local password verification uses real salted PBKDF2 and rejects incorrect credentials',async()=>{
+ const c=client(),password='unrelated-test-secret',salt='test-salt',iterations=210000;
+ assert.equal(await c.offlinePasswordVerifier(password,salt,iterations),require('node:crypto').pbkdf2Sync(password,salt,iterations,32,'sha256').toString('hex'));
+ await assert.rejects(c.signInLocalOffline('jcherrera0723@gmail.com','incorrect-secret'),/Incorrect offline account/);
+ await assert.rejects(c.signInLocalOffline('other@example.com','incorrect-secret'),/Incorrect offline account/);
+ assert.equal(c.state.user.id,'offline-a');
+});
+test('local account work never reaches the server, even while connected or when sync is requested',async()=>{
+ const c=client();c.state.user={id:'local-offline-jcherrera0723',name:'John Carlo Herrera',role:'farmer',localOnly:true};c.state.token='';c.navigator.onLine=true;let calls=0;c.fetch=async()=>{calls++;throw Error('Must not connect')};
+ const body={draftId:'local-draft',crop:'palay',variety:'RC 222',quantity:50,location:'Laguna',harvestDate:'2026-10-22'};
+ await c.api('/api/market',{action:'saveDraft',...body});assert.equal(c.offlineMarket().drafts[0].variety,'RC 222');
+ await c.api('/api/community',{action:'createPost',text:'Local composition',category:'general'});
+ for(let i=0;i<160;i++)await c.api('/api/market',{action:'recordUsage',page:'plan'});
+ assert.equal(c.offlineQueue().length,2);assert.equal(c.offlineHistory(c.state.user.id).length,50);
+ await c.offlineSync(true);assert.equal(calls,0);assert.equal(c.offlineQueue().length,2);
+ for(const [path,body]of [['/api/market',{action:'offer'}],['/api/market',{action:'messageOffer'}],['/api/subscription',{action:'choose',plan:'enterprise'}]])await assert.rejects(c.api(path,body),/online account/);
+ c.offlinePut('data:market',{downloadedAt:new Date().toISOString(),data:{premium:true,subscriptionTier:'enterprise'}});assert.equal(c.offlineMarket().premium,false);assert.equal(c.offlineMarket().subscriptionTier,null);
+ c.state.user={id:'online-user',role:'farmer'};c.state.token='real-online-token';assert.equal(c.offlineQueue().length,0);assert.equal(c.offlineHistory(c.state.user.id).length,0);
+});
+test('online sign-in retries after a temporary failure instead of remaining trapped in offline mode',async()=>{
+ const c=client();c.state.user=null;c.state.token='';c.navigator.onLine=true;let calls=0;
+ c.fetch=async()=>{calls++;throw Error('Temporary failure')};await assert.rejects(c.api('/api/auth/login',{email:'test@example.com',password:'unrelated-secret'}),/require internet/);assert.equal(c.state.networkUnavailable,true);
+ c.fetch=async()=>{calls++;return new Response(JSON.stringify({user:{id:'online-user'},token:'test-token'}),{status:200})};
+ const response=await c.api('/api/auth/login',{email:'test@example.com',password:'unrelated-secret'});assert.equal(response.user.id,'online-user');assert.equal(c.state.networkUnavailable,false);assert.equal(calls,2);assert.equal(c.localStorage.length,0);
+ c.state.networkUnavailable=true;c.fetch=async()=>new Response(JSON.stringify({error:'Service temporarily unavailable.'}),{status:503});const failure=await c.offlineTransport('/api/auth/login',{},{});assert.equal(failure.status,503);assert.equal((await failure.json()).error,'Service temporarily unavailable.');
 });
 test('failed synchronization retains work and a different account never sends it',async()=>{
  const c=client();await c.api('/api/market',{action:'offer',listingId:'old-listing',quantity:10,price:20});const owner=c.state.user.id;c.navigator.onLine=true;

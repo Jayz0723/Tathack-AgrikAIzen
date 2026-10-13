@@ -1,4 +1,4 @@
-const SHELL_CACHE='agrikaizen-shell-offline-v1';
+const SHELL_CACHE='agrikaizen-shell-offline-v2';
 const SHELL=['/','/index.html','/manifest.webmanifest','/css/style.css','/js/app.js','/js/offline.js','/js/marketplace.js','/js/community.js','/js/intelligence.js','/js/flow.js','/js/navigation.js','/assets/logo.jpg','/assets/harvest-insights-v2.jpg','/assets/profile-cover-v2.jpg','/assets/cooperatives-reference.jpg','/assets/profile-reference.jpg',...['palay','mais','kamatis','sibuyas','saging','talong','sili','pechay','repolyo','patatas','kamote','mangga','pinya','papaya','niyog'].map(c=>`/assets/crops/${c}.jpg`)];
 self.addEventListener('install',event=>{event.waitUntil((async()=>{const cache=await caches.open(SHELL_CACHE);await cache.addAll(SHELL.map(url=>new Request(url,{cache:'reload'})));await self.skipWaiting()})())});
 self.addEventListener('activate',event=>{event.waitUntil((async()=>{for(const key of await caches.keys())if(key.startsWith('agrikaizen-shell-')&&key!==SHELL_CACHE)await caches.delete(key);await self.clients.claim()})())});
