@@ -33,6 +33,12 @@ Persistent user storage is deliberately required in a Vercel deployment: an abse
 - Add the production domain to any organization restrictions applied to the OpenAI key.
 - AI estimates are guidance only; they are not an offer or guarantee of a market price.
 
+## Recent Activity
+
+The profile shows the signed-in account's actual recent feature use and successful actions, with crop details where applicable and real timestamps. Opening the estimator is distinct from completing an estimate. Background reads, failed requests, and retries of an already-published listing do not create false activity. New accounts show an empty state; the former static "Used AI Price Estimator — Today" entry is removed. Tracking begins with this release, so earlier unrecorded feature use is not invented.
+
+Activity is saved privately under the authenticated user's ID in the existing persistent store. The server retains the latest 50 entries and the profile displays the latest 10. Other accounts cannot read that history. Activity responses update only the activity container, preserving unrelated form inputs. No additional Vercel keys are needed.
+
 ## Government price references (October 2026)
 
 - Open Market Intelligence and select Analyze market to retrieve both sources. References also appear after a standalone or listing price estimate. Government fetching does not automatically start on page entry.

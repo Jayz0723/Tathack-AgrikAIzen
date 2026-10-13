@@ -63,6 +63,7 @@ module.exports = async (req,res) => {
     const session=verify((req.headers.authorization||'').replace(/^Bearer /,''));
     const user=session&&await getUser(session.email);
     if(!user||user.id!==session.sub)return send(res,401,{error:'Please sign in again.'});
+    res.activityContext={user,path:'community',body:req.body||{}};
     const body=req.body||{},raw=await command(['GET',KEY]),db=normalized(raw);
     if(body.action==='read')return send(res,200,{posts:publicPosts(db,user)});
     const result=mutate(db,user,body);

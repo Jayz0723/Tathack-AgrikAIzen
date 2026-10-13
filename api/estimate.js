@@ -1,4 +1,4 @@
-const { send, method, command } = require('./lib/store');
+const { send, method, command, verify, getUser } = require('./lib/store');
 const {intelligence, weather, externalPrices, withOfficial, governmentSummary} = require('./intelligence');
 const MARKET_KEY='agrikaizen:market:v1';
 const base = { palay:27, mais:18, kamatis:52, sibuyas:64, saging:24, talong:48, sili:95, pechay:42, repolyo:38, patatas:70, kamote:36, mangga:65, pinya:35, papaya:32, niyog:28 };
@@ -19,6 +19,7 @@ module.exports = async (req,res) => {
   if (!method(req,res)) return;
   const input = req.body || {};
   if (!base[input.crop] || !['premium','standard','low'].includes(input.quality) || !Number.isFinite(input.quantity) || input.quantity < 1 || !input.location || !input.harvestDate) return send(res,400,{error:'Punan ang lahat ng detalye ng ani.'});
+  try{const session=verify((req.headers?.authorization||'').replace(/^Bearer /,'')),user=session&&await getUser(session.email);if(user&&user.id===session.sub)res.activityContext={user,path:'estimate',body:input}}catch(error){console.error('estimate activity authentication unavailable',error.message)}
   let market=null,weatherData=null,officialRecords=0,governmentData=[];
   try{const raw=await command(['GET',MARKET_KEY]),db={listings:[],offers:[],requests:[],priceReports:[],...(raw?JSON.parse(raw):{})};const official=await externalPrices(input.crop,input.location);officialRecords=official.length;governmentData=governmentSummary(official,official.sourceStatus);market=intelligence(withOfficial(db,official),input.crop,input.location);market.governmentData=governmentData;}catch(error){console.error('market context unavailable',error)}
   try{weatherData=await weather(input.location)}catch(error){console.error('weather context unavailable',error)}

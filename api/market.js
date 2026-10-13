@@ -216,6 +216,9 @@ module.exports = async (req,res) => {
     const session = verify((req.headers.authorization || '').replace(/^Bearer /,''));
     const user = session && await getUser(session.email);
     if (!user || user.id !== session.sub) return send(res,401,{error:'Please sign in again.'});
+    res.activityContext={user,path:'market',body:req.body||{}};
+    if(req.body?.action==='readActivity')return send(res,200,{});
+    if(req.body?.action==='recordUsage'){const b=req.body;if(b.feature!=='crop-plan'&&!['prices','estimate','intelligence','plan','coops','map','oversupply','buyers','harvests','community','premium','offers','logistics','assisted'].includes(b.page))return send(res,400,{error:'Unknown app feature.'});return send(res,200,{})}
     const b = req.body || {};
     const raw = await command(['GET',KEY]); const db = Object.assign(blank(),raw ? JSON.parse(raw) : {});
     db.offers.forEach(o=>{o.transactionStatus=o.transactionStatus||(o.status==='accepted'?'confirmed':o.status==='countered'?'counter_review':o.status==='rejected'?'cancelled':'offer_review')});

@@ -122,6 +122,7 @@ module.exports=async(req,res)=>{
   try{
     const session=verify((req.headers.authorization||'').replace(/^Bearer /,'')),user=session&&await getUser(session.email);
     if(!user||user.id!==session.sub)return send(res,401,{error:'Please sign in again.'});
+    res.activityContext={user,path:'intelligence',body:req.body||{}};
     const body=req.body||{},action=body.action||'read',crop=CROPS.includes(body.crop)?body.crop:'palay',location=clean(body.location||user.location);
     const {raw,db}=await loadDb();
     if(action==='read')return send(res,200,{...intelligence(db,crop,location),assistedFarmers:db.assistedFarmers.filter(x=>x.coopId===user.id),reports:db.priceReports.filter(x=>user.role==='admin'||x.reporterId===user.id).slice(-20).reverse()});

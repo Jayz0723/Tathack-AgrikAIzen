@@ -8,6 +8,7 @@ module.exports=async(req,res)=>{
     const session=verify((req.headers.authorization||'').replace(/^Bearer /,''));
     const user=session&&await getUser(session.email);
     if(!user||user.id!==session.sub)return send(res,401,{error:'Please sign in again.'});
+    res.activityContext={user,path:'subscription',body:req.body||{}};
     if(user.role!=='buyer')return send(res,403,{error:'Buyer plans are available only to buyer accounts.'});
     const input=req.body||{};
     if(input.action!=='choose'||!['pro','enterprise'].includes(input.plan))return send(res,400,{error:'Choose either the Pro or Enterprise plan.'});
