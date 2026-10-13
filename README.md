@@ -21,7 +21,7 @@ This project is a mobile-first web app for farmers, buyers, and cooperatives. It
    - `KV_REST_API_TOKEN`
 3. Add a long random `AUTH_SECRET` value. This signs login sessions.
 4. Add `OPENAI_API_KEY` and optionally `OPENAI_MODEL` (defaults to `gpt-5.6-luna`). The key remains only in the serverless function and is never sent to the browser.
-5. Official Philippine Statistics Authority farmgate prices are available automatically through the built-in PSA OpenSTAT connector; no government API token is required. `PSA_OPENSTAT_BASE_URL` is optional and defaults to the official endpoint shown in `.env.example`. `GOV_PRICE_API_URL` and `GOV_PRICE_API_TOKEN` remain optional for an additional licensed institutional feed that returns normalized `price`, `location`, `date`, and `source` fields.
+5. Official government references are available automatically; no government API token is required. The PSA OpenSTAT connector retrieves monthly farmgate observations. The DA connector discovers and reads the latest supported Daily Price Index PDF from https://www.da.gov.ph/price-monitoring/ (selected NCR wet markets). `PSA_OPENSTAT_BASE_URL` is optional. `GOV_PRICE_API_URL` and `GOV_PRICE_API_TOKEN` remain optional for an additional licensed institutional feed returning normalized `price` (PHP/kg), `location`, `date`, `source`, and `marketType` (`farmgate` or `retail`). Unspecified market stages are comparison-only references.
 6. To enable browser push notifications, generate a VAPID key pair and add `VAPID_SUBJECT`, `VAPID_PUBLIC_KEY`, and `VAPID_PRIVATE_KEY`. `VAPID_SUBJECT` should be a `mailto:` address or HTTPS URL.
 7. Deploy. Vercel installs the package dependencies and routes the API functions automatically.
 
@@ -32,6 +32,16 @@ Persistent user storage is deliberately required in a Vercel deployment: an abse
 - Never commit a real `.env` file or API key.
 - Add the production domain to any organization restrictions applied to the OpenAI key.
 - AI estimates are guidance only; they are not an offer or guarantee of a market price.
+
+## Government price references (October 2026)
+
+- Open Market Intelligence and select Analyze market to retrieve both sources. References also appear after a standalone or listing price estimate. Government fetching does not automatically start on page entry.
+- PSA monthly farmgate observations support the farmer's numeric price range. DA daily retail observations provide separately labelled market context for the AI explanation and comparison, and never enter the farmgate average or trend. The numeric estimate remains constrained to the statistical range with quality adjustments, even when the AI service is available.
+- Each source shows its reporting date, geographic coverage, commodity/variety, PHP/kg unit, and official source link. DA's NCR observations are not presented as local CALABARZON prices. DA milled rice and fresh corn cobs are marked as different product forms from palay and dry corn grain. Missing commodities are reported honestly; coconut oil is never mapped to coconut produce.
+- The DA connector checks the report title, NCR retail coverage, date, and stated peso-per-kilogram units before accepting its known table format. It uses the published index to discover new supported `DPI-AFC.pdf` reports, caches successful retrievals for one hour, and coalesces simultaneous requests. Scanned PDFs or changed layouts are not guessed; the source reports unavailable if validation fails.
+- PSA and DA are fetched independently. Failure of either source does not block the other. Both unavailable still allows existing marketplace guidance with explicit source warnings. Government reports are published observations, not guaranteed real-time quotations.
+- Administrator imports save both sources idempotently with provenance. Farmer/community reports cannot label themselves as official sources. No new Vercel environment variables are needed for the DA connector; Vercel installs the PDF parsing dependency on deployment.
+- The DA text test fixture is extracted from https://www.da.gov.ph/wp-content/uploads/2026/10/October-13-2026-DPI-AFC.pdf and verifies the actual report format and observed values offline.
 
 ## Marketplace update (October 2026)
 

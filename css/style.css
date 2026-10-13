@@ -73,6 +73,7 @@ html{font-size:18px}body{font-family:Arial,"Segoe UI",sans-serif;line-height:1.5
 .sponsored-placement{border:2px dashed #c9a53b;background:linear-gradient(145deg,#fffbea,#fff)}
 .sponsored-placement h3{margin:8px 0 6px}.sponsored-placement p{margin-bottom:8px;color:var(--muted);font-size:.92rem;line-height:1.5}
 
+.government-source{border-top:1px solid var(--line);margin-top:18px;padding-top:16px}.government-source h3{margin:0 0 8px;font-size:19px;line-height:1.4}.government-source time{white-space:nowrap}.government-source summary{cursor:pointer;padding:12px 0;font-weight:700;line-height:1.5}.government-source a{display:inline-block;padding:12px 0;font-weight:700;color:var(--forest)}.government-observation{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;padding:12px 0;border-top:1px solid var(--line);align-items:start}.government-observation small{display:block;color:var(--muted);margin-top:5px;line-height:1.5}.government-observation strong{white-space:nowrap;color:var(--green)}
 /* Smooth, accessible motion inspired by modern mobile delivery apps */
 .insight-hero{background:linear-gradient(90deg,rgba(15,43,19,.88) 0%,rgba(15,43,19,.74) 57%,rgba(15,43,19,.22) 100%),url('../assets/harvest-insights-v2.jpg') center/cover}
 :root{--motion-spring:cubic-bezier(.22,1,.36,1);--motion-quick:120ms;--motion-page:280ms}

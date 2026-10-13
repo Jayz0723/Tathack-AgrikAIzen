@@ -5,6 +5,7 @@
   "description": "Vercel-ready AgrikAIzen web app",
   "dependencies": {
     "openai": "^6.0.0",
+    "pdf-parse": "^2.4.5",
     "web-push": "^3.6.7"
   },
   "engines": {
