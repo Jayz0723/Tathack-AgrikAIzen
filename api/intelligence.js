@@ -137,12 +137,14 @@ module.exports=async(req,res)=>{
       const imported=await externalPrices(crop,location,{force:true});if(!imported.length&&imported.sourceStatus.some(s=>s.status==='unavailable'))fail('Official sources are unavailable. No records were imported.',503);const updated=withOfficial(db,imported,user.id);await saveDb(raw,updated);return send(res,200,{result:{imported:imported.length,sources:governmentSummary(imported,imported.sourceStatus)}});
     }
     if(action==='reportPrice'){
+      const requestId=body.clientRequestId;if(requestId&&!/^[a-z0-9-]{36}$/i.test(requestId))fail('Invalid sync request.');
+      const receipt=requestId&&(db.offlineReceipts||[]).find(r=>r.userId===user.id&&r.requestId===requestId);if(receipt){res.skipActivity=true;return send(res,200,{result:receipt.result})}
       if(user.role!=='farmer'&&user.role!=='coop')fail('Only farmers and cooperatives can report selling prices.',403);
       if(!CROPS.includes(body.crop)||!positive(body.price)||!positive(body.quantity)||!validDate(body.saleDate)||!location)fail('Complete the crop, price, quantity, date, and location.');
       if(body.marketType&&!['direct-buyer','farmgate','wholesale','retail'].includes(body.marketType))fail('Community reports cannot claim to be official government data.');
       const transaction=body.transactionId&&db.offers.find(o=>o.id===body.transactionId&&o.transactionStatus==='completed'&&(o.farmerId===user.id||o.delivery?.providerId===user.id));
       const report={id:crypto.randomUUID(),reporterId:user.id,reporter:user.name,crop:body.crop,price:body.price,quantity:body.quantity,location,saleDate:body.saleDate,marketType:clean(body.marketType||'direct-buyer',40),buyerName:clean(body.buyerName,100),transactionId:transaction?.id||null,status:transaction?'verified':'community',createdAt:new Date().toISOString()};
-      db.priceReports.push(report);await saveDb(raw,db);return send(res,200,{result:report});
+      db.priceReports.push(report);if(requestId)db.offlineReceipts=[{userId:user.id,requestId,result:{id:report.id,crop:report.crop,status:report.status}},...(db.offlineReceipts||[])].slice(0,1000);await saveDb(raw,db);return send(res,200,{result:report});
     }
     if(action==='moderateReport'){
       if(user.role!=='admin')fail('Only administrators can review reports.',403);const report=db.priceReports.find(x=>x.id===body.id);if(!report)fail('Price report not found.',404);if(!['verified','rejected'].includes(body.status))fail('Invalid review status.');report.status=body.status;report.reviewedBy=user.id;report.reviewedAt=new Date().toISOString();await saveDb(raw,db);return send(res,200,{result:report});

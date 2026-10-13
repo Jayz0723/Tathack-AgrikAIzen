@@ -218,7 +218,7 @@ module.exports = async (req,res) => {
     if (!user || user.id !== session.sub) return send(res,401,{error:'Please sign in again.'});
     res.activityContext={user,path:'market',body:req.body||{}};
     if(req.body?.action==='readActivity')return send(res,200,{});
-    if(req.body?.action==='recordUsage'){const b=req.body;if(b.feature!=='crop-plan'&&!['prices','estimate','intelligence','plan','coops','map','oversupply','buyers','harvests','community','premium','offers','logistics','assisted'].includes(b.page))return send(res,400,{error:'Unknown app feature.'});return send(res,200,{})}
+    if(req.body?.action==='recordUsage'){const b=req.body;if(!['crop-plan','offline-price','offline-market'].includes(b.feature)&&!['prices','estimate','intelligence','plan','coops','map','oversupply','buyers','harvests','community','premium','offers','logistics','assisted'].includes(b.page))return send(res,400,{error:'Unknown app feature.'});return send(res,200,{})}
     const b = req.body || {};
     const raw = await command(['GET',KEY]); const db = Object.assign(blank(),raw ? JSON.parse(raw) : {});
     db.offers.forEach(o=>{o.transactionStatus=o.transactionStatus||(o.status==='accepted'?'confirmed':o.status==='countered'?'counter_review':o.status==='rejected'?'cancelled':'offer_review')});
@@ -230,7 +230,12 @@ module.exports = async (req,res) => {
       const matches=db.listings.filter(l => l.status==='available' && l.crop===b.crop && l.availableQuantity>=b.quantity && l.price<=b.price && (!number(b.minimumPrice) || l.price>=b.minimumPrice) && (!b.requiredDate || l.harvestDate<=b.requiredDate) && (!b.quality || b.quality==='any' || l.quality===b.quality) && (!b.farmingMethod || b.farmingMethod==='any' || l.farmingMethod===b.farmingMethod) && (!number(b.distance) || !number(l.distance) || l.distance<=b.distance)).map(l=>{const reasons=['crop','quantity','price'],sameArea=String(l.location).toLowerCase().includes(String(user.location).split(',').pop().trim().toLowerCase()),quality=!b.quality||b.quality==='any'||l.quality===b.quality,method=!b.farmingMethod||b.farmingMethod==='any'||l.farmingMethod===b.farmingMethod,dateFit=!b.requiredDate||l.harvestDate<=b.requiredDate;if(sameArea)reasons.push('location');if(quality)reasons.push('quality');if(method)reasons.push('farming-method');if(dateFit)reasons.push('delivery-date');const matchScore=Math.min(100,55+(sameArea?15:0)+(quality?10:0)+(method?10:0)+(dateFit?10:0));return {...l,matchScore,matchReasons:reasons}}).sort((a,b)=>b.matchScore-a.matchScore||a.price-b.price);
       return send(res,200,{matches,distanceNotice:matches.some(l=>!number(l.distance))});
     }
+    const requestId=b.clientRequestId;if(requestId&&!/^[a-z0-9-]{36}$/i.test(requestId))fail('Invalid sync request.');
+    const receipt=requestId&&(db.offlineReceipts||[]).find(r=>r.userId===user.id&&r.requestId===requestId);
+    if(receipt){res.skipActivity=true;return send(res,200,{result:receipt.result})}
     const result = mutate(db,user,b);
+    if(requestId){const brief=r=>({id:r.id,crop:r.crop,variety:r.variety,quantity:r.quantity,status:r.status,transactionStatus:r.transactionStatus});db.offlineReceipts=[{userId:user.id,requestId,result:Array.isArray(result)?result.map(brief):brief(result)},...(db.offlineReceipts||[])].slice(0,1000)}
+
     // Compare and swap prevents simultaneous publishers/responders losing each other's changes.
     const script = "local old=redis.call('GET',KEYS[1]); if (old or '') ~= ARGV[1] then return 0 end; redis.call('SET',KEYS[1],ARGV[2]); return 1";
     if (!await command(['EVAL',script,1,KEY,raw || '',JSON.stringify(db)])) return send(res,409,{error:'The market changed. Refresh and try again.'});

@@ -7,13 +7,17 @@
   <meta name="theme-color" content="#4b8f28">
   <meta name="description" content="AgrikAIzen: AI-guided crop pricing and marketplace for Filipino farmers.">
   <title>AgrikAIzen</title>
+  <link rel="manifest" href="/manifest.webmanifest">
   <link rel="stylesheet" href="css/style.css">
 </head>
 
 <body>
+  <aside id="connectionStatus" class="connection-status" role="status" hidden></aside>
   <main id="app" aria-live="polite"></main>
+  <dialog id="offlineBackup" class="offline-backup"></dialog>
   <div id="toast" role="status" aria-live="polite"></div>
   <script src="js/app.js" defer></script>
+  <script src="js/offline.js" defer></script>
   <script src="js/marketplace.js" defer></script>
   <script src="js/community.js" defer></script>
   <script src="js/intelligence.js" defer></script>

@@ -66,7 +66,11 @@ module.exports = async (req,res) => {
     res.activityContext={user,path:'community',body:req.body||{}};
     const body=req.body||{},raw=await command(['GET',KEY]),db=normalized(raw);
     if(body.action==='read')return send(res,200,{posts:publicPosts(db,user)});
+    const requestId=body.clientRequestId;if(requestId&&!/^[a-z0-9-]{36}$/i.test(requestId))fail('Invalid sync request.');
+    const receipt=requestId&&(db.offlineReceipts||[]).find(r=>r.userId===user.id&&r.requestId===requestId);
+    if(receipt){res.skipActivity=true;return send(res,200,{result:receipt.result,posts:publicPosts(db,user)})}
     const result=mutate(db,user,body);
+    if(requestId)db.offlineReceipts=[{userId:user.id,requestId,result:{id:result.id}},...(db.offlineReceipts||[])].slice(0,1000);
     const script="local old=redis.call('GET',KEYS[1]); if (old or '') ~= ARGV[1] then return 0 end; redis.call('SET',KEYS[1],ARGV[2]); return 1";
     if(!await command(['EVAL',script,1,KEY,raw||'',JSON.stringify(db)]))return send(res,409,{error:'The community changed. Refresh and try again.'});
     return send(res,200,{result:body.action==='deletePost'?{id:result.id}:publicPost(result,user),posts:publicPosts(db,user)});

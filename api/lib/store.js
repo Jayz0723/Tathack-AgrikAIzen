@@ -57,11 +57,11 @@ function activityEvent(context,value){
   const {path,body={}}=context,result=value.result||{};
   const events={market:{saveDraft:'draft-saved',deleteDraft:'draft-deleted',publish:'listing-published',request:'buyer-request-posted',offer:'offer-sent',respondRequest:'request-response-sent',messageRequest:'message-sent',messageOffer:'message-sent',respond:'offer-response',respondRequestOffer:'offer-response',respondCounter:'counter-response',selectDelivery:'delivery-selected',acceptDelivery:'delivery-job-accepted',startDelivery:'delivery-started',completeDelivery:'delivery-completed',createAlert:'alert-saved',deleteAlert:'alert-deleted',toggleSupplier:'supplier-updated',createRecurring:'recurring-order-saved',toggleRecurring:'recurring-order-updated',bulkOffer:'bulk-request-sent',match:'smart-sourcing-used'},community:{createPost:'community-posted',addComment:'community-commented',toggleReaction:'community-reaction',deletePost:'community-post-deleted'},intelligence:{analyze:'market-analyzed',reportPrice:'price-reported',syncExternal:'official-prices-imported',createAssistedFarmer:'assisted-farmer-created',publishAssisted:'assisted-listing-published'},subscription:{choose:'plan-requested'}};
   let type=path==='estimate'?'price-estimated':events[path]?.[body.action];
-  if(path==='market'&&body.action==='recordUsage')type=body.feature==='crop-plan'?'crop-plan-created':ACTIVITY_PAGES.has(body.page)?`view:${body.page}`:null;
+  if(path==='market'&&body.action==='recordUsage')type=body.feature==='crop-plan'?'crop-plan-created':body.feature==='offline-price'?'offline-price-estimated':body.feature==='offline-market'?'offline-market-analyzed':ACTIVITY_PAGES.has(body.page)?`view:${body.page}`:null;
   if(!type)return null;
   const crops=new Set(['palay','mais','kamatis','sibuyas','saging','talong','sili','pechay','repolyo','patatas','kamote','mangga','pinya','papaya','niyog']);
   const crop=crops.has(result.crop||body.crop)?result.crop||body.crop:null;
-  return {id:crypto.randomUUID(),type,crop,status:['accepted','rejected','countered'].includes(body.status)?body.status:null,plan:['pro','enterprise'].includes(body.plan)?body.plan:null,resourceId:typeof result.id==='string'?result.id.slice(0,120):null,createdAt:new Date().toISOString()};
+  return {id:crypto.randomUUID(),type,crop,requestId:typeof body.clientRequestId==='string'?body.clientRequestId.slice(0,80):null,status:['accepted','rejected','countered'].includes(body.status)?body.status:null,plan:['pro','enterprise'].includes(body.plan)?body.plan:null,resourceId:typeof result.id==='string'?result.id.slice(0,120):null,createdAt:path==='market'&&body.action==='recordUsage'&&Number.isFinite(Date.parse(body.offlineOccurredAt))&&Date.parse(body.offlineOccurredAt)<=Date.now()+60000&&Date.parse(body.offlineOccurredAt)>Date.now()-90*86400000?new Date(body.offlineOccurredAt).toISOString():new Date().toISOString()};
 }
 async function recentActivity(user){
   const raw=await command(['GET',`agrikaizen:activity:${user.id}`]);
@@ -72,6 +72,7 @@ async function appendActivity(user,event){
   const script="local old=redis.call('GET',KEYS[1]); if (old or '') ~= ARGV[1] then return 0 end; redis.call('SET',KEYS[1],ARGV[2]); return 1";
   for(let attempt=0;attempt<4;attempt++){
     const raw=await command(['GET',key]),items=raw?JSON.parse(raw):[];
+    if(event.requestId&&items.some(e=>e.requestId===event.requestId))return null;
     // Publishing an existing draft is idempotent, so it should not create fake
     // repeat publishing entries when the request is retried.
     if(event.type==='listing-published'&&event.resourceId&&items.some(e=>e.type===event.type&&e.resourceId===event.resourceId))return null;
@@ -83,7 +84,7 @@ async function send(res, code, value) {
   const context=res.activityContext;
   if(code>=200&&code<300&&context?.user){
     try{
-      const event=activityEvent(context,value);if(event){const saved=await appendActivity(context.user,event);if(saved)value={...value,activity:saved}}
+      const event=res.skipActivity?null:activityEvent(context,value);if(event){const saved=await appendActivity(context.user,event);if(saved)value={...value,activity:saved}}
       if(context.path==='market'&&['read','readActivity'].includes(context.body?.action))value={...value,recentActivity:await recentActivity(context.user)};
     }catch(error){console.error('activity history unavailable',error.message)}
   }
